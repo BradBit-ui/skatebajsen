@@ -36,7 +36,6 @@
     let gameActive = false, itemsCollected = 0, totalItemsSpawned = 0, level = 1, isMuted = false, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed, bgScale;
 
-    // Känn av om vi är på mobil
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     const skyColors = ['#87CEEB', '#98FB98', '#DDA0DD', '#FFFACD']; 
@@ -49,8 +48,8 @@
     const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const bgMusic = new Audio('music.mp3');
     
-    // MUSIKINSTÄLLNING: Endast volym om det INTE är mobil
-    bgMusic.volume = isMobile ? 0 : 0.15; 
+    // MUSIKEN TILLBAKA: Låg volym (0.04) för att inte störa ut effekterna
+    bgMusic.volume = 0.04; 
     bgMusic.loop = true; 
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
@@ -88,16 +87,13 @@
         startMenu.style.display = "none";
         player.y = groundY - playerSize;
         player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
-        
-        // Spela bara musik om det inte är mobil och inte muteat
-        if (!isMuted && !isMobile) bgMusic.play();
+        if (!isMuted) bgMusic.play();
     }
 
     muteBtn.addEventListener("click", (e) => {
         e.stopPropagation(); isMuted = !isMuted;
         muteBtn.innerText = isMuted ? "🔇 LJUD AV" : "🔊 LJUD PÅ";
-        if (isMuted) bgMusic.pause(); 
-        else if (gameActive && !isMobile) bgMusic.play();
+        if (isMuted) bgMusic.pause(); else if (gameActive) bgMusic.play();
     });
 
     document.getElementById("start-btn-menu").addEventListener("click", (e) => { e.stopPropagation(); startGame(); });
