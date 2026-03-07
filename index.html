@@ -49,8 +49,14 @@
     let gameActive = false, itemsCollected = 0, totalItemsSpawned = 0, level = 1, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed, bgScale;
 
+    // KONTROLLERA ENHET
     const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const volSettings = isMobile ? { start: 0.30, game: 0.02, label: "MOBIL" } : { start: 0.15, game: 0.08, label: "DESKTOP" };
+    
+    // Desktop startar nu på en behaglig nivå och stannar där.
+    const volSettings = isMobile ? 
+        { start: 0.35, game: 0.08, label: "MOBIL" } : 
+        { start: 0.12, game: 0.12, label: "DESKTOP" };
+
     volumeSlider.value = volSettings.start;
     document.getElementById("device-info").innerText = `🎵 Musik (${volSettings.label})`;
 
@@ -86,7 +92,7 @@
     function resize() {
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
-        rotateMsg.style.display = (h > w && isMobile) ? "flex" : "none";
+        if (h > w && isMobile) rotateMsg.style.display = "flex"; else rotateMsg.style.display = "none";
         groundY = h * 0.75; playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
         bgSpeed = 6; bgScale = groundY / (h * 0.65);
         player.x = w * 0.22; player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
@@ -98,9 +104,10 @@
     }
 
     function autoFadeVolume(targetValue, duration) {
-        if (!gainNode) return;
+        if (!gainNode || !isMobile) return; // KÖR ENDAST FADE OM DET ÄR MOBIL
+        
         const startTime = audioCtx.currentTime;
-        gainNode.gain.exponentialRampToValueAtTime(Math.max(targetValue, 0.001), startTime + duration/1000);
+        gainNode.gain.linearRampToValueAtTime(targetValue, startTime + duration/1000);
         
         const startVal = parseFloat(volumeSlider.value);
         const startT = performance.now();
@@ -122,7 +129,9 @@
         
         playSoundEffect(wowSound);
         gameMusic.play().catch(() => {});
-        autoFadeVolume(volSettings.game, 2500);
+        
+        // Denna körs nu bara om isMobile är sant
+        autoFadeVolume(volSettings.game, 2000);
     }
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
@@ -151,10 +160,14 @@
 
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(backgroundImage, bgScroll, -h*0.1, w * bgScale, h * bgScale);
+        ctx.drawImage(backgroundImage, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
+        
         if (gameActive) {
             bgScroll -= bgSpeed; if(bgScroll <= -w * bgScale) bgScroll = 0;
             player.velocityY += player.gravity; player.y += player.velocityY;
             if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
+            
             spawnTimer++;
             if(spawnTimer > 60) {
                 totalItemsSpawned++;
@@ -183,19 +196,21 @@
                 }
             }
         }
-        ctx.drawImage(backgroundImage, bgScroll, -h*0.1, w * bgScale, h * bgScale);
-        ctx.drawImage(backgroundImage, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
+        
         ctx.fillStyle = "#333"; ctx.fillRect(0, groundY, w, h - groundY);
         ctx.fillStyle = "rgba(255,255,255,0.3)";
         for(let i=0; i<w+300; i+=300) ctx.fillRect(i + (bgScroll%300), groundY + (h-groundY)*0.5, 120, h*0.012);
+        
         collectables.forEach(c => ctx.drawImage(itemImages[c.type], c.x, c.y, c.size, c.size));
         ctx.drawImage(playerImage, player.x, player.y, playerSize, playerSize);
+        
         particles.forEach((p, i) => {
             p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.015;
             ctx.globalAlpha = p.l; ctx.fillStyle = p.c;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
             if(p.l <= 0) particles.splice(i,1);
         });
+        
         ctx.globalAlpha = 1;
         if (gameActive) {
             ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(20, 20, 220, 90);
@@ -208,7 +223,7 @@
     
     window.addEventListener('resize', resize);
     resize();
-    gameLoop(); // Spelet startar rita direkt
+    gameLoop();
 </script>
 </body>
 </html>
