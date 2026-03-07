@@ -9,26 +9,12 @@
         body { margin: 0; padding: 0; background-color: #ffb6c1; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
-        
-        /* ROTATE MESSAGE - visas endast i portrait på mobil */
-        #rotate-message { 
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #ffb6c1; color: #333; z-index: 300; 
-            flex-direction: column; justify-content: center; align-items: center; text-align: center; 
-        }
-        #rotate-message h2 { font-size: 24px; margin-top: 20px; }
+        #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .phone-icon { font-size: 80px; animation: rotateAnim 2s infinite ease-in-out; }
         @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
-
-        #ui-layer { 
-            position: absolute; bottom: 30px; right: 30px; z-index: 50; 
-            background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px;
-            display: flex; flex-direction: column; align-items: center;
-            padding-bottom: calc(15px + env(safe-area-inset-bottom));
-        }
+        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 50; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
         .slider-label { color: white; font-size: 11px; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; }
         #volume-slider { cursor: pointer; width: 120px; accent-color: #f1c40f; }
-        
         #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; }
         #start-btn-menu { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; font-weight: bold; }
         h1 { font-size: 8vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin-bottom: 10px; }
@@ -37,41 +23,27 @@
 <body>
 
 <div id="game-wrapper">
-    <div id="rotate-message">
-        <div class="phone-icon">📱🔄</div>
-        <h2>Vänd telefonen för att spela!</h2>
-    </div>
-
+    <div id="rotate-message"><div class="phone-icon">📱🔄</div><h2>Vänd telefonen!</h2></div>
     <canvas id="gameCanvas"></canvas>
-    
-    <div id="start-menu">
-        <h1>SKATE-BAJSEN</h1>
-        <button id="start-btn-menu">STARTA!</button>
-    </div>
-
-    <div id="ui-layer">
-        <div class="slider-label" id="device-info">🎵 Musik</div>
-        <input type="range" id="volume-slider" min="0" max="0.5" step="0.01" value="0.1">
-    </div>
+    <div id="start-menu"><h1>SKATE-BAJSEN</h1><button id="start-btn-menu">STARTA!</button></div>
+    <div id="ui-layer"><div class="slider-label" id="device-info">🎵 Musik</div><input type="range" id="volume-slider" min="0" max="0.5" step="0.01" value="0.1"></div>
 </div>
 
 <script>
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-    const startMenu = document.getElementById("start-menu"), volumeSlider = document.getElementById("volume-slider");
-    const rotateMessage = document.getElementById("rotate-message");
+    const startMenu = document.getElementById("start-menu"), volumeSlider = document.getElementById("volume-slider"), rotateMessage = document.getElementById("rotate-message");
 
     let gameActive = false, itemsCollected = 0, totalItemsSpawned = 0, level = 1, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed = 6, bgScale;
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const volSettings = isMobile ? { start: 0.35, game: 0.06 } : { start: 0.12, game: 0.12 };
-    
     volumeSlider.value = volSettings.start;
     document.getElementById("device-info").innerText = `🎵 Musik (${isMobile ? 'MOBIL' : 'DESKTOP'})`;
 
     let audioCtx, gainNode, gameMusic;
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
-    const wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
+    const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), neighSound = new Audio('neigh.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
 
     const backgroundImage = new Image(); backgroundImage.src = 'pixel_background.png'; 
     const playerImage = new Image(); playerImage.src = 'bajskorv_sprite.png';
@@ -99,14 +71,7 @@
     function resize() {
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
-
-        // KONTROLLERA ROTATION
-        if (isMobile && h > w) {
-            rotateMessage.style.display = "flex";
-        } else {
-            rotateMessage.style.display = "none";
-        }
-
+        rotateMessage.style.display = (isMobile && h > w) ? "flex" : "none";
         groundY = h * 0.75; playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
         bgScale = groundY / (h * 0.65);
         player.x = w * 0.22; player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
@@ -125,14 +90,12 @@
         player.y = groundY - playerSize;
         playSoundEffect(wowSound);
         gameMusic.play().catch(() => {});
-        
         if (isMobile) {
             gainNode.gain.setTargetAtTime(volSettings.game, audioCtx.currentTime, 1.5);
             let fadeIv = setInterval(() => {
                 let cur = parseFloat(volumeSlider.value);
-                if (cur > volSettings.game) {
-                    volumeSlider.value = (cur - 0.01).toFixed(3);
-                } else { clearInterval(fadeIv); }
+                if (cur > volSettings.game) volumeSlider.value = (cur - 0.01).toFixed(3);
+                else clearInterval(fadeIv);
             }, 100);
         }
     }
@@ -175,8 +138,9 @@
             if(spawnTimer > 60) {
                 totalItemsSpawned++;
                 let type = ['unicorn', 'star', 'heart'][Math.floor(Math.random()*3)];
-                let s = (totalItemsSpawned % 7 === 0) ? itemSize * 1.6 : itemSize;
-                collectables.push({ x: w, y: groundY - s - Math.random()*(h*0.35), size: s, type, isBoss: totalItemsSpawned % 7 === 0 });
+                let isBoss = (totalItemsSpawned % 7 === 0);
+                let s = isBoss ? itemSize * 1.6 : itemSize;
+                collectables.push({ x: w, y: groundY - s - Math.random()*(h*0.35), size: s, type, isBoss: isBoss });
                 spawnTimer = 0;
             }
             for(let i = collectables.length-1; i>=0; i--) {
@@ -185,9 +149,15 @@
                 let pPad = playerSize * 0.15;
                 if(player.x + pPad < c.x + c.size && player.x + playerSize - pPad > c.x && player.y < c.y + c.size && player.y + playerSize > c.y) {
                     itemsCollected++;
+                    // KOLLEKTIONS-LJUD
                     if(itemsCollected % 25 === 0) {
                         playSoundEffect(megaBajsSound);
                         setTimeout(() => { if (gameActive) { playSoundEffect(fartSounds[0]); for(let b=0; b<60; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*15, vy: (Math.random()-0.8)*20, s: Math.random()*8+4, c: '#8B4513', l: 1.5 }); } }, 3000);
+                    } else if (megaBajsSound.paused || megaBajsSound.currentTime === 0) {
+                        // NY LOGIK FÖR RÖSTERNA:
+                        if(c.isBoss) playSoundEffect(wowSound);
+                        else if(itemsCollected % 12 === 0) playSoundEffect(braJobbatSound);
+                        else if(c.type === 'unicorn') playSoundEffect(neighSound);
                     }
                     collectables.splice(i,1);
                     if(itemsCollected % 5 === 0) level++;
@@ -198,14 +168,12 @@
         ctx.fillStyle = "#333"; ctx.fillRect(0, groundY, w, h - groundY);
         collectables.forEach(c => ctx.drawImage(itemImages[c.type], c.x, c.y, c.size, c.size));
         ctx.drawImage(playerImage, player.x, player.y, playerSize, playerSize);
-        
         particles.forEach((p, i) => {
             p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.02;
             ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
             if(p.l <= 0) particles.splice(i,1);
         });
-        
         ctx.globalAlpha = 1;
         if (gameActive) {
             ctx.fillStyle = "white"; ctx.font = "bold 22px Courier";
