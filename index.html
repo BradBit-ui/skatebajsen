@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Skate-bajsen</title>
     <style>
         body { 
@@ -15,79 +15,68 @@
                 linear-gradient(-45deg, transparent 75%, #ffc0cb 75%);
             background-size: 40px 40px;
             background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; align-items: center; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
             height: 100vh; font-family: 'Courier New', Courier, monospace;
-            overflow: hidden;
-            touch-action: manipulation;
+            overflow: hidden; touch-action: none;
         }
         
-        #game-container {
+        #game-wrapper {
             position: relative;
-            width: 95vw;
-            max-width: 1200px;
-            aspect-ratio: 2 / 1; 
-            overflow: hidden;
-            border: 8px solid #1a252f;
-            border-radius: 8px;
-            box-shadow: 0px 15px 45px rgba(0,0,0,0.6);
+            width: 100vw; height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
 
-        canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; transition: background-color 1s; }
+        canvas { 
+            display: block; 
+            max-width: 100%; max-height: 100%;
+            background-color: #87CEEB; 
+            transition: background-color 1s;
+            box-shadow: 0px 0px 50px rgba(0,0,0,0.3);
+        }
         
-        /* DISKRET MUTE-KNAPP PÅ ROSA BAKGRUND */
-        .game-btn {
-            padding: 8px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            color: #888; /* Ännu lite diskretare grå */
-            background-color: transparent;
-            border: 2px solid #888;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: all 0.2s;
-        }
-        .game-btn:hover { color: #fff; border-color: #fff; background-color: rgba(255,255,255,0.1); }
-
         #ui-layer {
-            margin-top: 15px; 
-            width: 95vw;
-            max-width: 1200px;
-            display: flex;
-            justify-content: flex-end; 
+            position: absolute;
+            bottom: 20px; right: 20px;
             z-index: 30;
+            padding-bottom: env(safe-area-inset-bottom); /* För iPhone-strecket */
+            padding-right: env(safe-area-inset-right);
+        }
+
+        .game-btn {
+            padding: 10px 15px; font-size: 12px; font-weight: bold;
+            color: #555; background-color: rgba(255,255,255,0.7);
+            border: 2px solid #555; cursor: pointer; text-transform: uppercase;
         }
 
         #start-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.75); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; color: white; text-align: center; z-index: 10;
+            background: rgba(0, 0, 0, 0.8); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: white; text-align: center; z-index: 40;
         }
         
         #start-btn-menu {
-            padding: 20px 40px; font-size: 32px;
+            padding: 20px 40px; font-size: 28px;
             background-color: #f1c40f; border: 5px solid #000; color: #000;
-            box-shadow: 8px 8px 0px #d35400; text-transform: uppercase; margin-top: 30px;
-            cursor: pointer;
+            box-shadow: 8px 8px 0px #d35400; text-transform: uppercase; cursor: pointer;
         }
 
-        h1 { font-size: clamp(40px, 8vw, 90px); color: #fff; text-shadow: 6px 6px 0px #d35400; margin: 0; }
+        h1 { font-size: 15vw; max-size: 80px; color: #fff; text-shadow: 4px 4px 0px #d35400; margin: 0; }
     </style>
 </head>
 <body>
 
-<div id="game-container">
+<div id="game-wrapper">
     <canvas id="gameCanvas"></canvas>
+    
     <div id="start-menu">
         <h1>SKATE-BAJSEN</h1>
-        <p>Varje 25:e poäng blir det bajsfest!</p>
-        <button id="start-btn-menu">STARTA SPELET!</button>
+        <p>Tryck var som helst för att hoppa!</p>
+        <button id="start-btn-menu">STARTA!</button>
     </div>
-</div>
 
-<div id="ui-layer">
-    <button id="mute-btn" class="game-btn">🔊 Ljud På</button>
+    <div id="ui-layer">
+        <button id="mute-btn" class="game-btn">🔊 LJUD PÅ</button>
+    </div>
 </div>
 
 <script>
@@ -97,17 +86,29 @@
     const startBtnMenu = document.getElementById("start-btn-menu");
     const muteBtn = document.getElementById("mute-btn");
 
-    canvas.width = 1200; canvas.height = 600; 
-    const groundY = 540; 
     let gameActive = false;
     let itemsCollected = 0;
     let totalItemsSpawned = 0; 
     let level = 1;
     let isMuted = false;
-    const bgSpeed = 6; 
+    let bgScroll = 0;
+    
+    // Dynamiska värden baserat på skärmstorlek
+    let w, h, groundY, playerSize, bgSpeed;
+    
+    function resize() {
+        w = window.innerWidth;
+        h = window.innerHeight;
+        canvas.width = w;
+        canvas.height = h;
+        groundY = h * 0.85;
+        playerSize = Math.min(w, h) * 0.25;
+        bgSpeed = w * 0.008;
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
     const skyColors = ['#87CEEB', '#98FB98', '#DDA0DD', '#FFFACD']; 
-
     const backgroundImage = new Image(); backgroundImage.src = 'pixel_background.png'; 
     const playerImage = new Image(); playerImage.src = 'bajskorv_sprite.png';
     const itemImages = { unicorn: new Image(), star: new Image(), heart: new Image() };
@@ -116,50 +117,36 @@
     itemImages.heart.src = 'heart_sprite.png';
 
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
-    const neighSound = new Audio('neigh.m4a'); 
-    const braJobbatSound = new Audio('brajobbat.m4a'); 
-    const wowSound = new Audio('wow.m4a');             
-    const megaBajsSound = new Audio('baaaajs.m4a');
+    const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'); 
+    const wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const bgMusic = new Audio('music.mp3');
     bgMusic.volume = 0.2; bgMusic.loop = true; 
 
-    let bgScroll = 0;
-    let player = { x: 120, y: groundY - 180, height: 180, jumpPower: -22, velocityY: 0, gravity: 0.95, isJumping: false };
-    let collectables = [];
-    let particles = [];
-    let spawnTimer = 0;
+    let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
+    let collectables = [], particles = [], spawnTimer = 0;
 
-    function playSound(sound) {
-        if (!isMuted) {
-            sound.currentTime = 0;
-            sound.play().catch(e => {});
-        }
-    }
+    function playSound(sound) { if (!isMuted) { sound.currentTime = 0; sound.play().catch(e=>{}); } }
 
-    function toggleMute() {
-        isMuted = !isMuted;
-        muteBtn.innerText = isMuted ? "🔇 Ljud Av" : "🔊 Ljud På";
-        if (isMuted) bgMusic.pause();
-        else if (gameActive) bgMusic.play();
-    }
-
-    function createExplosion(x, y, color) {
-        for (let i = 0; i < 20; i++) {
-            particles.push({
-                x: x, y: y, vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.5) * 12,
-                size: Math.random() * 6 + 3, color: color, life: 1.0
-            });
-        }
+    function resetPlayer() {
+        player.y = groundY - playerSize;
+        player.gravity = h * 0.0015;
+        player.jumpPower = h * -0.035;
     }
 
     function startGame() {
         gameActive = true;
         startMenu.style.display = "none";
-        if (!isMuted) bgMusic.play().catch(e => {});
+        resetPlayer();
+        if (!isMuted) bgMusic.play().catch(e=>{});
     }
 
-    // Stoppa klick på Mute från att trigga hopp
-    muteBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMute(); });
+    muteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        isMuted = !isMuted;
+        muteBtn.innerText = isMuted ? "🔇 LJUD AV" : "🔊 LJUD PÅ";
+        if (isMuted) bgMusic.pause(); else if (gameActive) bgMusic.play();
+    });
+
     startBtnMenu.addEventListener("click", (e) => { e.stopPropagation(); startGame(); });
 
     function handleJump() {
@@ -167,117 +154,96 @@
         else if (!player.isJumping) {
             player.velocityY = player.jumpPower;
             player.isJumping = true;
-            if (megaBajsSound.paused || megaBajsSound.ended) {
-                const randomFart = fartSounds[Math.floor(Math.random() * fartSounds.length)];
-                playSound(randomFart);
-            }
+            if (megaBajsSound.paused) playSound(fartSounds[Math.floor(Math.random() * fartSounds.length)]);
         }
     }
 
-    document.addEventListener("keydown", (e) => { if(e.code === "Space") { e.preventDefault(); handleJump(); } });
-    canvas.addEventListener("touchstart", (e) => { e.preventDefault(); handleJump(); }, {passive: false});
+    window.addEventListener("keydown", (e) => { if(e.code === "Space") handleJump(); });
+    window.addEventListener("touchstart", (e) => { if(e.target.tagName !== 'BUTTON') handleJump(); });
 
     function gameLoop() {
+        ctx.clearRect(0, 0, w, h);
+        
         if (gameActive) {
             bgScroll -= bgSpeed;
-            if(bgScroll <= -canvas.width) bgScroll = 0;
+            if(bgScroll <= -w) bgScroll = 0;
             player.velocityY += player.gravity;
             player.y += player.velocityY;
-            if(player.y > (groundY - player.height)) { player.y = groundY - player.height; player.velocityY = 0; player.isJumping = false; }
+            if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
 
             spawnTimer++;
-            if(spawnTimer > 65) { 
+            if(spawnTimer > 60) {
                 totalItemsSpawned++;
-                const types = ['unicorn', 'star', 'heart'];
-                const randomType = types[Math.floor(Math.random() * types.length)];
-                let isBoss = (totalItemsSpawned % 7 === 0);
-                let size = isBoss ? 180 : 90;
-                collectables.push({ x: canvas.width, y: groundY - size - 40 - Math.random() * 180, height: size, type: randomType, isBoss: isBoss });
+                let type = ['unicorn', 'star', 'heart'][Math.floor(Math.random()*3)];
+                let isBoss = totalItemsSpawned % 7 === 0;
+                let s = isBoss ? playerSize : playerSize * 0.5;
+                collectables.push({ x: w, y: groundY - s - Math.random()*(h*0.3), size: s, type, isBoss });
                 spawnTimer = 0;
             }
 
-            for(let i = collectables.length - 1; i >= 0; i--) {
-                collectables[i].x -= bgSpeed; 
-                let img = itemImages[collectables[i].type];
-                let ratio = img.width / img.height;
-                let currentWidth = collectables[i].height * ratio;
-                let pad = 35; 
-                let pWidth = player.height * (playerImage.width / playerImage.height);
-
-                if (player.x + pad < collectables[i].x + currentWidth - pad && 
-                    player.x + pWidth - pad > collectables[i].x + pad &&
-                    player.y < collectables[i].y + collectables[i].height - pad && 
-                    player.y + player.height - pad > collectables[i].y + pad) {
-                    
-                    createExplosion(collectables[i].x + currentWidth/2, collectables[i].y + collectables[i].height/2, collectables[i].type === 'heart' ? '#ff4d4d' : '#ffff00');
+            for(let i = collectables.length-1; i>=0; i--) {
+                let c = collectables[i];
+                c.x -= bgSpeed;
+                if(c.x + c.size < 0) collectables.splice(i, 1);
+                
+                // Collision
+                if(player.x < c.x + c.size*0.8 && player.x + playerSize*0.8 > c.x && player.y < c.y + c.size*0.8 && player.y + playerSize*0.8 > c.y) {
                     itemsCollected++;
-
-                    if (itemsCollected > 0 && itemsCollected % 25 === 0) {
+                    if(itemsCollected % 25 === 0) {
                         playSound(megaBajsSound);
                         setTimeout(() => {
-                            if (gameActive) {
-                                const randomFart = fartSounds[Math.floor(Math.random() * fartSounds.length)];
-                                playSound(randomFart);
-                                for (let b = 0; b < 150; b++) { 
-                                    particles.push({ x: player.x + 60, y: player.y + 160, vx: (Math.random() - 0.3) * 20, vy: (Math.random() - 0.8) * 30, size: Math.random() * 12 + 5, color: '#8B4513', life: 2.5 });
-                                }
-                                for (let g = 0; g < 100; g++) {
-                                    particles.push({ x: player.x + 60, y: player.y + 160, vx: (Math.random() - 0.5) * 25, vy: (Math.random() - 0.9) * 35, size: Math.random() * 6 + 2, color: '#FFD700', life: 3.0 });
-                                }
-                            }
-                        }, 3000); 
+                            for(let b=0; b<100; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*20, vy: (Math.random()-0.8)*30, s: Math.random()*10+5, c: '#8B4513', l: 2 });
+                        }, 3000);
                     }
-                    
-                    if (megaBajsSound.paused || megaBajsSound.ended) {
-                        if (collectables[i].isBoss) playSound(wowSound);
-                        else if (itemsCollected % 12 === 0) playSound(braJobbatSound);
-                        else if (collectables[i].type === 'unicorn') playSound(neighSound);
+                    if (megaBajsSound.paused) {
+                        if(c.isBoss) playSound(wowSound);
+                        else if(itemsCollected % 12 === 0) playSound(braJobbatSound);
+                        else if(c.type === 'unicorn') playSound(neighSound);
                     }
-                    
-                    collectables.splice(i, 1);
-                    if(itemsCollected % 5 === 0) { level++; canvas.style.backgroundColor = skyColors[(level - 1) % skyColors.length]; }
-                    continue; 
+                    collectables.splice(i,1);
+                    if(itemsCollected % 5 === 0) { level++; canvas.style.backgroundColor = skyColors[(level-1)%4]; }
                 }
-                if(collectables[i].x < -300) collectables.splice(i, 1);
-            }
-            for (let i = particles.length - 1; i >= 0; i--) {
-                particles[i].x += particles[i].vx; particles[i].y += particles[i].vy;
-                particles[i].vy += 0.25; particles[i].life -= 0.015;
-                if (particles[i].life <= 0) particles.splice(i, 1);
             }
         }
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(backgroundImage, bgScroll, 0, canvas.width, canvas.height);
-        ctx.drawImage(backgroundImage, bgScroll + canvas.width, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#333333"; ctx.fillRect(0, canvas.height - 180, canvas.width, 180);
-        ctx.fillStyle = "#ffffff";
-        for(let i = 0; i < canvas.width + 200; i += 200) { ctx.fillRect(i + (bgScroll % 200), canvas.height - 90, 100, 15); }
+        // Draw Background
+        ctx.drawImage(backgroundImage, bgScroll, 0, w, groundY);
+        ctx.drawImage(backgroundImage, bgScroll + w, 0, w, groundY);
+        
+        // Draw Road
+        ctx.fillStyle = "#333"; ctx.fillRect(0, groundY, w, h - groundY);
+        ctx.fillStyle = "white";
+        for(let i=0; i<w+200; i+=200) ctx.fillRect(i + (bgScroll%200), groundY + (h-groundY)/2, 80, 10);
 
-        let pRatio = playerImage.width / playerImage.height;
-        ctx.drawImage(playerImage, player.x, player.y, player.height * pRatio, player.height);
+        // Draw Items
+        collectables.forEach(c => ctx.drawImage(itemImages[c.type], c.x, c.y, c.size, c.size));
 
-        collectables.forEach(c => {
-            let img = itemImages[c.type];
-            let ratio = img.width / img.height;
-            ctx.drawImage(img, c.x, c.y, c.height * ratio, c.height);
+        // Draw Player
+        ctx.drawImage(playerImage, player.x, player.y, playerSize, playerSize);
+
+        // Particles
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.02;
+            ctx.globalAlpha = p.l; ctx.fillStyle = p.c;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
+            if(p.l <= 0) particles.splice(i,1);
         });
-
-        particles.forEach(p => {
-            ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
-        });
-        ctx.globalAlpha = 1.0;
+        ctx.globalAlpha = 1;
 
         if (gameActive) {
-            ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(20, 20, 320, 100);
-            ctx.fillStyle = "white"; ctx.font = "bold 32px 'Courier New'";
-            ctx.fillText("✨ Samlade: " + itemsCollected, 40, 60);
-            ctx.fillStyle = "gold"; ctx.fillText("⭐ LEVEL: " + level, 40, 100);
+            ctx.fillStyle = "rgba(0,0,0,0.6)"; 
+            let uiX = 20 + envSafe('left');
+            let uiY = 20 + envSafe('top');
+            ctx.fillRect(uiX, uiY, 200, 80);
+            ctx.fillStyle = "white"; ctx.font = "bold 20px Courier";
+            ctx.fillText("✨ Samlade: " + itemsCollected, uiX + 20, uiY + 35);
+            ctx.fillStyle = "gold"; ctx.fillText("⭐ LEVEL: " + level, uiX + 20, uiY + 65);
         }
         requestAnimationFrame(gameLoop);
     }
     
+    function envSafe(side) { return 0; } // Förenklad för webb
+
     let imgCount = 0;
     function count() { imgCount++; if(imgCount === 5) gameLoop(); }
     backgroundImage.onload = count; playerImage.onload = count;
