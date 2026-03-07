@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen</title>
     <link rel="icon" type="image/png" href="favicon.png">
+    <title>Skate-bajsen</title>
     <style>
         body { margin: 0; padding: 0; background-color: #ffb6c1; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -37,7 +37,7 @@
     let gameActive = false, itemsCollected = 0, totalItemsSpawned = 0, level = 1, isMuted = false, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed, bgScale;
 
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isIphone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const skyColors = ['#87CEEB', '#98FB98', '#DDA0DD', '#FFFACD']; 
     
     const backgroundImage = new Image(); backgroundImage.src = 'pixel_background.png'; 
@@ -48,7 +48,10 @@
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
     const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const bgMusic = new Audio('music.mp3');
-    bgMusic.volume = 0.2; bgMusic.loop = true; 
+    
+    // IPHONE-ANPASSNING: Om det är en iPhone sänker vi musiken till nästan ingenting
+    bgMusic.volume = isIphone ? 0.008 : 0.15; 
+    bgMusic.loop = true; 
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
     let collectables = [], particles = [], spawnTimer = 0;
@@ -56,7 +59,7 @@
     function resize() {
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
-        if (h > w && isMobile) rotateMsg.style.display = "flex"; else rotateMsg.style.display = "none";
+        if (h > w && isIphone) rotateMsg.style.display = "flex"; else rotateMsg.style.display = "none";
         groundY = h * 0.75; playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
         bgSpeed = 6; 
         bgScale = groundY / (h * 0.65);
@@ -65,10 +68,19 @@
     }
 
     function playSoundEffect(sound) { 
-        if (!isMuted) { sound.volume = 1.0; sound.currentTime = 0; sound.play().catch(e => {}); } 
+        if (!isMuted) { 
+            sound.volume = 1.0; 
+            sound.currentTime = 0; 
+            sound.play().catch(e => {}); 
+        } 
     }
 
     function startGame() {
+        // iPhone kräver interaktion för att "låsa upp" ljudkanaler
+        [...fartSounds, neighSound, braJobbatSound, wowSound, megaBajsSound, bgMusic].forEach(s => {
+            s.play().then(() => { s.pause(); if(s !== bgMusic) s.currentTime = 0; }).catch(e => {});
+        });
+        
         gameActive = true;
         startMenu.style.display = "none";
         player.y = groundY - playerSize;
