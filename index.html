@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Skate-bajsen</title>
     <style>
-        body { 
-            margin: 0; padding: 0; background-color: #ffb6c1; 
-            display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            height: 100vh; font-family: 'Courier New', Courier, monospace;
-            overflow: hidden; touch-action: none;
-        }
+        body { margin: 0; padding: 0; background-color: #ffb6c1; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
         #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 200; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
@@ -42,8 +37,8 @@
     let w, h, groundY, playerSize, itemSize, bgSpeed, bgScale;
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
     const skyColors = ['#87CEEB', '#98FB98', '#DDA0DD', '#FFFACD']; 
+    
     const backgroundImage = new Image(); backgroundImage.src = 'pixel_background.png'; 
     const playerImage = new Image(); playerImage.src = 'bajskorv_sprite.png';
     const itemImages = { unicorn: new Image(), star: new Image(), heart: new Image() };
@@ -52,10 +47,7 @@
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
     const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const bgMusic = new Audio('music.mp3');
-    
-    // TILLBAKA TILL DIN VOLYM (0.2)
-    bgMusic.volume = 0.2; 
-    bgMusic.loop = true; 
+    bgMusic.volume = 0.2; bgMusic.loop = true; 
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
     let collectables = [], particles = [], spawnTimer = 0;
@@ -63,42 +55,24 @@
     function resize() {
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
-        rotateMsg.style.display = (h > w && isMobile) ? "flex" : "none";
+        if (h > w && isMobile) rotateMsg.style.display = "flex"; else rotateMsg.style.display = "none";
         groundY = h * 0.75; playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
-        
-        // TILLBAKA TILL DIN FART (6)
         bgSpeed = 6; 
-        
         bgScale = groundY / (h * 0.65);
         player.x = w * 0.22; 
-        if(gameActive) { player.gravity = h * 0.0024; player.jumpPower = h * -0.044; }
-    }
-
-    function unlockAudio() {
-        const allSounds = [...fartSounds, neighSound, braJobbatSound, wowSound, megaBajsSound, bgMusic];
-        allSounds.forEach(s => {
-            s.muted = true; 
-            s.play().then(() => { s.pause(); s.muted = false; s.currentTime = 0; }).catch(e => {});
-        });
+        player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
     }
 
     function playSoundEffect(sound) { 
-        if (!isMuted) { 
-            sound.volume = 1.0; 
-            sound.currentTime = 0; 
-            sound.play().catch(e => {}); 
-        } 
+        if (!isMuted) { sound.volume = 1.0; sound.currentTime = 0; sound.play().catch(e => {}); } 
     }
 
     function startGame() {
-        unlockAudio();
         gameActive = true;
         startMenu.style.display = "none";
         player.y = groundY - playerSize;
-        player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
-        
         playSoundEffect(wowSound);
-        if (!isMuted) bgMusic.play();
+        if (!isMuted) bgMusic.play().catch(e => {});
     }
 
     muteBtn.addEventListener("click", (e) => {
@@ -113,9 +87,7 @@
         if (!gameActive) startGame();
         else if (!player.isJumping) {
             player.velocityY = player.jumpPower; player.isJumping = true;
-            if (megaBajsSound.paused || megaBajsSound.currentTime === 0) {
-                playSoundEffect(fartSounds[Math.floor(Math.random() * fartSounds.length)]);
-            }
+            if (megaBajsSound.paused || megaBajsSound.currentTime === 0) playSoundEffect(fartSounds[Math.floor(Math.random() * fartSounds.length)]);
         }
     }
 
@@ -128,9 +100,8 @@
             bgScroll -= bgSpeed; if(bgScroll <= -w * bgScale) bgScroll = 0;
             player.velocityY += player.gravity; player.y += player.velocityY;
             if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
-            
             spawnTimer++;
-            if(spawnTimer > 60) { 
+            if(spawnTimer > 60) {
                 totalItemsSpawned++;
                 let type = ['unicorn', 'star', 'heart'][Math.floor(Math.random()*3)];
                 let s = (totalItemsSpawned % 7 === 0) ? itemSize * 1.6 : itemSize;
@@ -145,12 +116,7 @@
                     itemsCollected++;
                     if(itemsCollected % 25 === 0) {
                         playSoundEffect(megaBajsSound);
-                        setTimeout(() => {
-                            if (gameActive) {
-                                playSoundEffect(fartSounds[0]);
-                                for(let b=0; b<120; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*20, vy: (Math.random()-0.8)*25, s: Math.random()*10+5, c: '#8B4513', l: 2.5 });
-                            }
-                        }, 3000);
+                        setTimeout(() => { if (gameActive) { playSoundEffect(fartSounds[0]); for(let b=0; b<120; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*20, vy: (Math.random()-0.8)*25, s: Math.random()*10+5, c: '#8B4513', l: 2.5 }); } }, 3000);
                     }
                     if (megaBajsSound.paused || megaBajsSound.currentTime === 0) {
                         if(c.isBoss) playSoundEffect(wowSound);
@@ -172,7 +138,7 @@
         particles.forEach((p, i) => {
             p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.015;
             ctx.globalAlpha = p.l; ctx.fillStyle = p.c;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size || p.s, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
             if(p.l <= 0) particles.splice(i,1);
         });
         ctx.globalAlpha = 1;
@@ -187,7 +153,7 @@
     
     window.addEventListener('resize', resize);
     resize();
-    let imgCount = 0;
-    function count() { imgCount++; if(imgCount === 5) gameLoop(); }
-    backgroundImage.onload = count; playerImage.onload = count;
-    itemImages.unicorn.onload = count; itemImages.star.
+    gameLoop();
+</script>
+</body>
+</html>
