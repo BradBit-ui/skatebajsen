@@ -49,8 +49,7 @@
     const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const bgMusic = new Audio('music.mp3');
     
-    // IPHONE-ANPASSNING: Om det är en iPhone sänker vi musiken till nästan ingenting
-    bgMusic.volume = isIphone ? 0.008 : 0.15; 
+    bgMusic.volume = isIphone ? 0.015 : 0.15; 
     bgMusic.loop = true; 
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
@@ -67,25 +66,36 @@
         player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
     }
 
+    // Kraftfullare upplåsning för Incognito
+    function unlockAudio() {
+        const sounds = [...fartSounds, neighSound, braJobbatSound, wowSound, megaBajsSound, bgMusic];
+        sounds.forEach(s => {
+            s.play().then(() => { 
+                s.pause(); 
+                s.currentTime = 0; 
+            }).catch(() => {});
+        });
+    }
+
     function playSoundEffect(sound) { 
         if (!isMuted) { 
             sound.volume = 1.0; 
             sound.currentTime = 0; 
-            sound.play().catch(e => {}); 
+            let p = sound.play();
+            if (p !== undefined) p.catch(() => {});
         } 
     }
 
     function startGame() {
-        // iPhone kräver interaktion för att "låsa upp" ljudkanaler
-        [...fartSounds, neighSound, braJobbatSound, wowSound, megaBajsSound, bgMusic].forEach(s => {
-            s.play().then(() => { s.pause(); if(s !== bgMusic) s.currentTime = 0; }).catch(e => {});
-        });
-        
+        unlockAudio(); // Väck ljudet vid första klicket
         gameActive = true;
         startMenu.style.display = "none";
         player.y = groundY - playerSize;
-        playSoundEffect(wowSound);
-        if (!isMuted) bgMusic.play().catch(e => {});
+        
+        setTimeout(() => {
+            playSoundEffect(wowSound);
+            if (!isMuted) bgMusic.play().catch(() => {});
+        }, 50);
     }
 
     muteBtn.addEventListener("click", (e) => {
@@ -94,18 +104,35 @@
         if (isMuted) bgMusic.pause(); else if (gameActive) bgMusic.play();
     });
 
-    document.getElementById("start-btn-menu").addEventListener("click", (e) => { e.stopPropagation(); startGame(); });
+    // Viktigt: Starta spelet via knappen
+    document.getElementById("start-btn-menu").addEventListener("click", (e) => { 
+        e.preventDefault();
+        e.stopPropagation(); 
+        startGame(); 
+    });
 
     function handleJump() {
-        if (!gameActive) startGame();
-        else if (!player.isJumping) {
+        if (!gameActive) return;
+        if (!player.isJumping) {
             player.velocityY = player.jumpPower; player.isJumping = true;
-            if (megaBajsSound.paused || megaBajsSound.currentTime === 0) playSoundEffect(fartSounds[Math.floor(Math.random() * fartSounds.length)]);
+            if (megaBajsSound.paused || megaBajsSound.currentTime === 0) {
+                playSoundEffect(fartSounds[Math.floor(Math.random() * fartSounds.length)]);
+            }
         }
     }
 
     window.addEventListener("keydown", (e) => { if(e.code === "Space") handleJump(); });
-    window.addEventListener("touchstart", (e) => { if(e.target.tagName !== 'BUTTON') { e.preventDefault(); handleJump(); } }, {passive: false});
+    // Touchstart kör ljud-upplåsning om spelet inte startat
+    window.addEventListener("touchstart", (e) => { 
+        if(e.target.tagName !== 'BUTTON') { 
+            if (!gameActive) {
+                unlockAudio();
+            } else {
+                e.preventDefault();
+                handleJump(); 
+            }
+        } 
+    }, {passive: false});
 
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
