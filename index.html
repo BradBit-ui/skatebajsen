@@ -48,8 +48,8 @@
     const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const bgMusic = new Audio('music.mp3');
     
-    // MUSIKEN TILLBAKA: Låg volym (0.04) för att inte störa ut effekterna
-    bgMusic.volume = 0.04; 
+    // Stabil volym för musiken (justerad för att inte dränka effekter)
+    bgMusic.volume = 0.05; 
     bgMusic.loop = true; 
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
@@ -60,8 +60,7 @@
         canvas.width = w; canvas.height = h;
         rotateMsg.style.display = (h > w && isMobile) ? "flex" : "none";
         groundY = h * 0.75; playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
-        bgSpeed = w * 0.006; 
-        bgScale = groundY / (h * 0.65);
+        bgSpeed = w * 0.006; bgScale = groundY / (h * 0.65);
         player.x = w * 0.22; 
         if(gameActive) { player.gravity = h * 0.0024; player.jumpPower = h * -0.044; }
     }
@@ -69,7 +68,8 @@
     function unlockAudio() {
         const allSounds = [...fartSounds, neighSound, braJobbatSound, wowSound, megaBajsSound, bgMusic];
         allSounds.forEach(s => {
-            s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(e => {});
+            s.muted = true; 
+            s.play().then(() => { s.pause(); s.muted = false; s.currentTime = 0; }).catch(e => {});
         });
     }
 
@@ -87,6 +87,9 @@
         startMenu.style.display = "none";
         player.y = groundY - playerSize;
         player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
+        
+        // Starta med Wow istället för Baaaajs
+        playSoundEffect(wowSound);
         if (!isMuted) bgMusic.play();
     }
 
@@ -102,7 +105,9 @@
         if (!gameActive) startGame();
         else if (!player.isJumping) {
             player.velocityY = player.jumpPower; player.isJumping = true;
-            if (megaBajsSound.paused) playSoundEffect(fartSounds[Math.floor(Math.random() * fartSounds.length)]);
+            if (megaBajsSound.paused || megaBajsSound.currentTime === 0) {
+                playSoundEffect(fartSounds[Math.floor(Math.random() * fartSounds.length)]);
+            }
         }
     }
 
@@ -138,7 +143,7 @@
                             }
                         }, 3000);
                     }
-                    if (megaBajsSound.paused) {
+                    if (megaBajsSound.paused || megaBajsSound.currentTime === 0) {
                         if(c.isBoss) playSoundEffect(wowSound);
                         else if(itemsCollected % 12 === 0) playSoundEffect(braJobbatSound);
                         else if(c.type === 'unicorn') playSoundEffect(neighSound);
