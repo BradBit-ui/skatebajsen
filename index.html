@@ -9,14 +9,13 @@
         body { margin: 0; padding: 0; background-color: #ffb6c1; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
-        #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 200; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
         #ui-layer { 
             position: absolute; bottom: 30px; right: 30px; z-index: 50; 
             background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px;
             display: flex; flex-direction: column; align-items: center;
             padding-bottom: calc(15px + env(safe-area-inset-bottom));
         }
-        .slider-label { color: white; font-size: 11px; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .slider-label { color: white; font-size: 11px; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; }
         #volume-slider { cursor: pointer; width: 120px; accent-color: #f1c40f; }
         #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; }
         #start-btn-menu { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; }
@@ -26,43 +25,42 @@
 <body>
 
 <div id="game-wrapper">
-    <div id="rotate-message"><h1>🔄</h1><h2>Vänd mobilen!</h2></div>
     <canvas id="gameCanvas"></canvas>
-    
     <div id="start-menu">
         <h1>SKATE-BAJSEN</h1>
-        <p>Tryck för att hoppa!</p>
         <button id="start-btn-menu">STARTA!</button>
     </div>
-
     <div id="ui-layer">
-        <div class="slider-label" id="device-info">🎵 Musik Volym</div>
+        <div class="slider-label" id="device-info">🎵 Musik</div>
         <input type="range" id="volume-slider" min="0" max="0.5" step="0.01" value="0.1">
     </div>
 </div>
 
 <script>
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-    const rotateMsg = document.getElementById("rotate-message"), startMenu = document.getElementById("start-menu");
-    const volumeSlider = document.getElementById("volume-slider");
+    const startMenu = document.getElementById("start-menu"), volumeSlider = document.getElementById("volume-slider");
 
     let gameActive = false, itemsCollected = 0, totalItemsSpawned = 0, level = 1, bgScroll = 0;
-    let w, h, groundY, playerSize, itemSize, bgSpeed, bgScale;
+    let w, h, groundY, playerSize, itemSize, bgSpeed = 6, bgScale;
 
-    // KONTROLLERA ENHET
-    const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const volSettings = isMobile ? { start: 0.35, game: 0.06 } : { start: 0.12, game: 0.12 };
     
-    // Desktop startar nu på en behaglig nivå och stannar där.
-    const volSettings = isMobile ? 
-        { start: 0.35, game: 0.08, label: "MOBIL" } : 
-        { start: 0.12, game: 0.12, label: "DESKTOP" };
-
     volumeSlider.value = volSettings.start;
-    document.getElementById("device-info").innerText = `🎵 Musik (${volSettings.label})`;
+    document.getElementById("device-info").innerText = `🎵 Musik (${isMobile ? 'MOBIL' : 'DESKTOP'})`;
 
-    let audioCtx, musicSource, gainNode, gameMusic;
+    // LJUD-VARIABLER (Globalt)
+    let audioCtx, gainNode, gameMusic;
+    const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
+    const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
 
-    function initAudio() {
+    // BILDER
+    const backgroundImage = new Image(); backgroundImage.src = 'pixel_background.png'; 
+    const playerImage = new Image(); playerImage.src = 'bajskorv_sprite.png';
+    const itemImages = { unicorn: new Image(), star: new Image(), heart: new Image() };
+    itemImages.unicorn.src = 'unicorn_sprite.png'; itemImages.star.src = 'star_sprite.png'; itemImages.heart.src = 'heart_sprite.png';
+
+    function initAudioOnce() {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             gainNode = audioCtx.createGain();
@@ -72,29 +70,20 @@
             gameMusic = new Audio('music.mp3');
             gameMusic.loop = true;
             gameMusic.crossOrigin = "anonymous";
-            musicSource = audioCtx.createMediaElementSource(gameMusic);
-            musicSource.connect(gainNode);
+            const source = audioCtx.createMediaElementSource(gameMusic);
+            source.connect(gainNode);
         }
     }
 
-    const backgroundImage = new Image(); backgroundImage.src = 'pixel_background.png'; 
-    const playerImage = new Image(); playerImage.src = 'bajskorv_sprite.png';
-    const itemImages = { unicorn: new Image(), star: new Image(), heart: new Image() };
-    itemImages.unicorn.src = 'unicorn_sprite.png'; itemImages.star.src = 'star_sprite.png'; itemImages.heart.src = 'heart_sprite.png';
-
-    const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
-    const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
-
     volumeSlider.addEventListener("input", (e) => {
-        if (gainNode) gainNode.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.05);
+        if (gainNode) gainNode.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.03);
     });
 
     function resize() {
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
-        if (h > w && isMobile) rotateMsg.style.display = "flex"; else rotateMsg.style.display = "none";
         groundY = h * 0.75; playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
-        bgSpeed = 6; bgScale = groundY / (h * 0.65);
+        bgScale = groundY / (h * 0.65);
         player.x = w * 0.22; player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
     }
 
@@ -103,24 +92,8 @@
         sound.play().catch(() => {});
     }
 
-    function autoFadeVolume(targetValue, duration) {
-        if (!gainNode || !isMobile) return; // KÖR ENDAST FADE OM DET ÄR MOBIL
-        
-        const startTime = audioCtx.currentTime;
-        gainNode.gain.linearRampToValueAtTime(targetValue, startTime + duration/1000);
-        
-        const startVal = parseFloat(volumeSlider.value);
-        const startT = performance.now();
-        function updateSlider(now) {
-            const p = Math.min((now - startT) / duration, 1);
-            volumeSlider.value = startVal + (targetValue - startVal) * p;
-            if (p < 1) requestAnimationFrame(updateSlider);
-        }
-        requestAnimationFrame(updateSlider);
-    }
-
     function startGame() {
-        initAudio();
+        initAudioOnce();
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
         gameActive = true;
@@ -130,8 +103,19 @@
         playSoundEffect(wowSound);
         gameMusic.play().catch(() => {});
         
-        // Denna körs nu bara om isMobile är sant
-        autoFadeVolume(volSettings.game, 2000);
+        // SÄKER FADE (Endast Mobil)
+        if (isMobile) {
+            gainNode.gain.setTargetAtTime(volSettings.game, audioCtx.currentTime, 1.5);
+            // Uppdatera slider visuellt (separat från ljudlogik för att undvika frysning)
+            let fadeIv = setInterval(() => {
+                let cur = parseFloat(volumeSlider.value);
+                if (cur > volSettings.game) {
+                    volumeSlider.value = (cur - 0.01).toFixed(3);
+                } else {
+                    clearInterval(fadeIv);
+                }
+            }, 100);
+        }
     }
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
@@ -166,7 +150,7 @@
         if (gameActive) {
             bgScroll -= bgSpeed; if(bgScroll <= -w * bgScale) bgScroll = 0;
             player.velocityY += player.gravity; player.y += player.velocityY;
-            if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
+            if(player.y > (groundY - playerSize)) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
             
             spawnTimer++;
             if(spawnTimer > 60) {
@@ -178,13 +162,13 @@
             }
             for(let i = collectables.length-1; i>=0; i--) {
                 let c = collectables[i]; c.x -= bgSpeed;
-                if(c.x + c.size < 0) collectables.splice(i, 1);
+                if(c.x + c.size < 0) { collectables.splice(i, 1); continue; }
                 let pPad = playerSize * 0.15;
                 if(player.x + pPad < c.x + c.size && player.x + playerSize - pPad > c.x && player.y < c.y + c.size && player.y + playerSize > c.y) {
                     itemsCollected++;
                     if(itemsCollected % 25 === 0) {
                         playSoundEffect(megaBajsSound);
-                        setTimeout(() => { if (gameActive) { playSoundEffect(fartSounds[0]); for(let b=0; b<120; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*20, vy: (Math.random()-0.8)*25, s: Math.random()*10+5, c: '#8B4513', l: 2.5 }); } }, 3000);
+                        setTimeout(() => { if (gameActive) { playSoundEffect(fartSounds[0]); for(let b=0; b<80; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*15, vy: (Math.random()-0.8)*20, s: Math.random()*8+4, c: '#8B4513', l: 1.5 }); } }, 3000);
                     }
                     if (megaBajsSound.paused || megaBajsSound.currentTime === 0) {
                         if(c.isBoss) playSoundEffect(wowSound);
@@ -192,31 +176,26 @@
                         else if(c.type === 'unicorn') playSoundEffect(neighSound);
                     }
                     collectables.splice(i,1);
-                    if(itemsCollected % 5 === 0) { level++; canvas.style.backgroundColor = skyColors[(level-1)%4]; }
+                    if(itemsCollected % 5 === 0) { level++; }
                 }
             }
         }
         
         ctx.fillStyle = "#333"; ctx.fillRect(0, groundY, w, h - groundY);
-        ctx.fillStyle = "rgba(255,255,255,0.3)";
-        for(let i=0; i<w+300; i+=300) ctx.fillRect(i + (bgScroll%300), groundY + (h-groundY)*0.5, 120, h*0.012);
-        
         collectables.forEach(c => ctx.drawImage(itemImages[c.type], c.x, c.y, c.size, c.size));
         ctx.drawImage(playerImage, player.x, player.y, playerSize, playerSize);
         
         particles.forEach((p, i) => {
-            p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.015;
-            ctx.globalAlpha = p.l; ctx.fillStyle = p.c;
+            p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.02;
+            ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
             if(p.l <= 0) particles.splice(i,1);
         });
         
         ctx.globalAlpha = 1;
         if (gameActive) {
-            ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(20, 20, 220, 90);
             ctx.fillStyle = "white"; ctx.font = "bold 22px Courier";
-            ctx.fillText("✨ Samlade: " + itemsCollected, 40, 55);
-            ctx.fillStyle = "gold"; ctx.fillText("⭐ LEVEL: " + level, 40, 85);
+            ctx.fillText("✨ " + itemsCollected, 30, 50);
         }
         requestAnimationFrame(gameLoop);
     }
