@@ -5,12 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Skate-bajsen</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #ffb6c1; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
-        #game-wrapper { position: relative; width: 100vw; height: 100vh; }
+        body { 
+            margin: 0; padding: 0; background-color: #ffb6c1; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            height: 100vh; font-family: 'Courier New', Courier, monospace;
+            overflow: hidden; touch-action: none;
+        }
+        #game-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
-        #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 200; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; }
+        #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 200; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
         #ui-layer { position: absolute; bottom: 20px; right: 20px; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
-        .game-btn { padding: 12px 20px; font-size: 14px; font-weight: bold; color: #333; background-color: rgba(255,255,255,0.8); border: 3px solid #333; cursor: pointer; text-transform: uppercase; }
+        .game-btn { padding: 12px 20px; font-size: 14px; font-weight: bold; color: #888; background-color: transparent; border: 2px solid #888; cursor: pointer; text-transform: uppercase; }
         #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; }
         #start-btn-menu { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; }
         h1 { font-size: 12vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin-bottom: 10px; }
@@ -26,7 +31,7 @@
         <p>Tryck för att hoppa!</p>
         <button id="start-btn-menu">STARTA!</button>
     </div>
-    <div id="ui-layer"><button id="mute-btn" class="game-btn">🔊 LJUD PÅ</button></div>
+    <div id="ui-layer"><button id="mute-btn" class="game-btn">🔊 Ljud På</button></div>
 </div>
 
 <script>
@@ -48,8 +53,8 @@
     const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const bgMusic = new Audio('music.mp3');
     
-    // Stabil volym för musiken (justerad för att inte dränka effekter)
-    bgMusic.volume = 0.05; 
+    // TILLBAKA TILL DIN VOLYM (0.2)
+    bgMusic.volume = 0.2; 
     bgMusic.loop = true; 
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
@@ -60,7 +65,11 @@
         canvas.width = w; canvas.height = h;
         rotateMsg.style.display = (h > w && isMobile) ? "flex" : "none";
         groundY = h * 0.75; playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
-        bgSpeed = w * 0.006; bgScale = groundY / (h * 0.65);
+        
+        // TILLBAKA TILL DIN FART (6)
+        bgSpeed = 6; 
+        
+        bgScale = groundY / (h * 0.65);
         player.x = w * 0.22; 
         if(gameActive) { player.gravity = h * 0.0024; player.jumpPower = h * -0.044; }
     }
@@ -88,14 +97,13 @@
         player.y = groundY - playerSize;
         player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
         
-        // Starta med Wow istället för Baaaajs
         playSoundEffect(wowSound);
         if (!isMuted) bgMusic.play();
     }
 
     muteBtn.addEventListener("click", (e) => {
         e.stopPropagation(); isMuted = !isMuted;
-        muteBtn.innerText = isMuted ? "🔇 LJUD AV" : "🔊 LJUD PÅ";
+        muteBtn.innerText = isMuted ? "🔇 Ljud Av" : "🔊 Ljud På";
         if (isMuted) bgMusic.pause(); else if (gameActive) bgMusic.play();
     });
 
@@ -120,8 +128,9 @@
             bgScroll -= bgSpeed; if(bgScroll <= -w * bgScale) bgScroll = 0;
             player.velocityY += player.gravity; player.y += player.velocityY;
             if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
+            
             spawnTimer++;
-            if(spawnTimer > 60) {
+            if(spawnTimer > 60) { 
                 totalItemsSpawned++;
                 let type = ['unicorn', 'star', 'heart'][Math.floor(Math.random()*3)];
                 let s = (totalItemsSpawned % 7 === 0) ? itemSize * 1.6 : itemSize;
@@ -181,7 +190,4 @@
     let imgCount = 0;
     function count() { imgCount++; if(imgCount === 5) gameLoop(); }
     backgroundImage.onload = count; playerImage.onload = count;
-    itemImages.unicorn.onload = count; itemImages.star.onload = count; itemImages.heart.onload = count;
-</script>
-</body>
-</html>
+    itemImages.unicorn.onload = count; itemImages.star.
