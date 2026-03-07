@@ -6,62 +6,56 @@
     <title>Skate-bajsen</title>
     <style>
         body { 
-            margin: 0; padding: 0; 
-            background-color: #ffb6c1; 
-            background-image: 
-                linear-gradient(45deg, #ffc0cb 25%, transparent 25%), 
-                linear-gradient(-45deg, #ffc0cb 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #ffc0cb 75%),
-                linear-gradient(-45deg, transparent 75%, #ffc0cb 75%);
-            background-size: 40px 40px;
+            margin: 0; padding: 0; background-color: #ffb6c1; 
             display: flex; justify-content: center; align-items: center; 
             height: 100vh; font-family: 'Courier New', Courier, monospace;
             overflow: hidden; touch-action: none;
         }
+        #game-wrapper { position: relative; width: 100vw; height: 100vh; }
+        canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
         
-        #game-wrapper {
-            position: relative;
-            width: 100vw; height: 100vh;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        /* Mobil-meddelande för stående läge */
+        #rotate-message {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffb6c1; color: #333; z-index: 200;
+            flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 20px; box-sizing: border-box;
         }
 
-        canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; transition: background-color 1s; }
-        
         #ui-layer {
-            position: absolute; bottom: 30px; right: 30px; z-index: 50;
-            padding-bottom: env(safe-area-inset-bottom); padding-right: env(safe-area-inset-right);
+            position: absolute; bottom: 20px; right: 20px; z-index: 50;
+            padding-bottom: env(safe-area-inset-bottom);
         }
-
         .game-btn {
-            padding: 15px 25px; font-size: 16px; font-weight: bold;
-            color: #ccc; background-color: rgba(0,0,0,0.5);
-            border: 2px solid #ccc; cursor: pointer; text-transform: uppercase;
+            padding: 12px 20px; font-size: 14px; font-weight: bold;
+            color: #333; background-color: rgba(255,255,255,0.8);
+            border: 3px solid #333; cursor: pointer; text-transform: uppercase;
         }
-        .game-btn:hover { color: #fff; border-color: #fff; background-color: rgba(255,255,255,0.1); }
-
         #start-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; color: white; text-align: center; z-index: 100;
+            justify-content: center; align-items: center; color: white; z-index: 100;
         }
-        
         #start-btn-menu {
             padding: 25px 50px; font-size: 32px; background-color: #f1c40f; 
-            border: 6px solid #000; color: #000; box-shadow: 10px 10px 0px #d35400; 
-            text-transform: uppercase; cursor: pointer; font-family: inherit;
+            border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer;
         }
-
-        h1 { font-size: 18vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin-bottom: 20px; }
+        h1 { font-size: 12vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div id="game-wrapper">
+    <div id="rotate-message">
+        <h1>🔄</h1>
+        <h2>Lägg ner skärmen för bäst upplevelse!</h2>
+    </div>
+
     <canvas id="gameCanvas"></canvas>
     
     <div id="start-menu">
         <h1>SKATE-BAJSEN</h1>
-        <p style="font-size: 20px;">Tryck för att hoppa!</p>
+        <p>Tryck för att hoppa!</p>
         <button id="start-btn-menu">STARTA!</button>
     </div>
 
@@ -73,30 +67,38 @@
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    const rotateMsg = document.getElementById("rotate-message");
     const startMenu = document.getElementById("start-menu");
-    const startBtnMenu = document.getElementById("start-btn-menu");
     const muteBtn = document.getElementById("mute-btn");
 
     let gameActive = false, itemsCollected = 0, totalItemsSpawned = 0, level = 1, isMuted = false, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed, bgScale;
-    
+
     function resize() {
         w = window.innerWidth;
         h = window.innerHeight;
         canvas.width = w;
         canvas.height = h;
+
+        // Visa roterings-meddelande om mobilen är stående
+        if (h > w && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            rotateMsg.style.display = "flex";
+        } else {
+            rotateMsg.style.display = "none";
+        }
+
+        groundY = h * 0.75;
+        playerSize = Math.min(w, h) * 0.25;
+        itemSize = playerSize * 0.8;
         
-        // --- FYSIK OCH PROPORTIONER ---
-        groundY = h * 0.72; // Gatan börjar lägre ner för att visa mer hus
-        playerSize = Math.min(w, h) * 0.26; 
-        itemSize = playerSize * 0.85; 
-        bgSpeed = w * 0.013;
-        
-        // Skala bilden så att trottoaren och gatan döljs nedanför groundY
-        // Baserat på att trottoar+gata i bilden är ca 30% av dess höjd
-        bgScale = groundY / (h * 0.7); 
-        
-        if(gameActive) resetPhysics();
+        // JÄMNARE FART: Inte för snabbt i liggande läge
+        bgSpeed = w * 0.009; 
+        bgScale = groundY / (h * 0.65);
+
+        if(gameActive) {
+            player.gravity = h * 0.0024; 
+            player.jumpPower = h * -0.044;
+        }
     }
 
     const skyColors = ['#87CEEB', '#98FB98', '#DDA0DD', '#FFFACD']; 
@@ -111,24 +113,27 @@
     const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'); 
     const wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const bgMusic = new Audio('music.mp3');
-    bgMusic.volume = 0.2; bgMusic.loop = true; 
+    
+    // LJUD-BALANS: Musiken är nu mycket tystare (0.1)
+    bgMusic.volume = 0.1; bgMusic.loop = true; 
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
     let collectables = [], particles = [], spawnTimer = 0;
 
-    function playSound(sound) { if (!isMuted) { sound.currentTime = 0; sound.play().catch(e=>{}); } }
-
-    function resetPhysics() {
-        // SNÄRTIGARE FYSIK
-        player.gravity = h * 0.0026; 
-        player.jumpPower = h * -0.046; 
+    function playSound(sound, vol = 1.0) { 
+        if (!isMuted) { 
+            sound.volume = vol;
+            sound.currentTime = 0; 
+            sound.play().catch(e=>{}); 
+        } 
     }
 
     function startGame() {
         gameActive = true;
         startMenu.style.display = "none";
-        resetPhysics();
         player.y = groundY - playerSize;
+        player.gravity = h * 0.0024; 
+        player.jumpPower = h * -0.044;
         if (!isMuted) bgMusic.play().catch(e=>{});
     }
 
@@ -139,42 +144,35 @@
         if (isMuted) bgMusic.pause(); else if (gameActive) bgMusic.play();
     });
 
-    startBtnMenu.addEventListener("click", (e) => { e.stopPropagation(); startGame(); });
+    document.getElementById("start-btn-menu").addEventListener("click", (e) => { e.stopPropagation(); startGame(); });
 
     function handleJump() {
         if (!gameActive) startGame();
         else if (!player.isJumping) {
             player.velocityY = player.jumpPower;
             player.isJumping = true;
-            if (megaBajsSound.paused) playSound(fartSounds[Math.floor(Math.random() * fartSounds.length)]);
+            if (megaBajsSound.paused) playSound(fartSounds[Math.floor(Math.random() * fartSounds.length)], 0.8);
         }
     }
 
     window.addEventListener("keydown", (e) => { if(e.code === "Space") handleJump(); });
-    window.addEventListener("touchstart", (e) => { 
-        if(e.target.tagName !== 'BUTTON') {
-            e.preventDefault();
-            handleJump(); 
-        }
-    }, {passive: false});
+    window.addEventListener("touchstart", (e) => { if(e.target.tagName !== 'BUTTON') { e.preventDefault(); handleJump(); } }, {passive: false});
 
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
-        
         if (gameActive) {
             bgScroll -= bgSpeed;
-            if(bgScroll <= -w) bgScroll = 0;
+            if(bgScroll <= -w * bgScale) bgScroll = 0;
             player.velocityY += player.gravity;
             player.y += player.velocityY;
-            if(player.y > groundY - playerSize) { player.y = groundY - player.height; player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
+            if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
 
             spawnTimer++;
-            if(spawnTimer > 45) { // Tätare spawn
+            if(spawnTimer > 50) {
                 totalItemsSpawned++;
                 let type = ['unicorn', 'star', 'heart'][Math.floor(Math.random()*3)];
-                let isBoss = totalItemsSpawned % 7 === 0;
-                let s = isBoss ? itemSize * 1.8 : itemSize;
-                collectables.push({ x: w, y: groundY - s - Math.random()*(h*0.35), size: s, type, isBoss });
+                let s = (totalItemsSpawned % 7 === 0) ? itemSize * 1.6 : itemSize;
+                collectables.push({ x: w, y: groundY - s - Math.random()*(h*0.35), size: s, type, isBoss: totalItemsSpawned % 7 === 0 });
                 spawnTimer = 0;
             }
 
@@ -183,25 +181,19 @@
                 c.x -= bgSpeed;
                 if(c.x + c.size < 0) collectables.splice(i, 1);
                 
-                // KOLLISION (Generösare träffyta för mobilen)
-                let pPad = playerSize * 0.1;
-                let cPad = c.size * 0.1;
-                if(player.x + pPad < c.x + c.size - cPad && 
-                   player.x + playerSize - pPad > c.x + cPad && 
-                   player.y + pPad < c.y + c.size - cPad && 
-                   player.y + playerSize - pPad > c.y + cPad) {
-                    
+                let pPad = playerSize * 0.15;
+                if(player.x + pPad < c.x + c.size && player.x + playerSize - pPad > c.x && player.y < c.y + c.size && player.y + playerSize > c.y) {
                     itemsCollected++;
                     if(itemsCollected % 25 === 0) {
-                        playSound(megaBajsSound);
+                        playSound(megaBajsSound, 1.0);
                         setTimeout(() => {
-                            for(let b=0; b<100; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*25, vy: (Math.random()-0.8)*35, s: Math.random()*12+6, c: '#8B4513', l: 2.5 });
+                            for(let b=0; b<100; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*20, vy: (Math.random()-0.8)*25, s: Math.random()*10+5, c: '#8B4513', l: 2.5 });
                         }, 3000);
                     }
                     if (megaBajsSound.paused) {
-                        if(c.isBoss) playSound(wowSound);
-                        else if(itemsCollected % 12 === 0) playSound(braJobbatSound);
-                        else if(c.type === 'unicorn') playSound(neighSound);
+                        if(c.isBoss) playSound(wowSound, 0.9);
+                        else if(itemsCollected % 12 === 0) playSound(braJobbatSound, 0.9);
+                        else if(c.type === 'unicorn') playSound(neighSound, 0.7);
                     }
                     collectables.splice(i,1);
                     if(itemsCollected % 5 === 0) { level++; canvas.style.backgroundColor = skyColors[(level-1)%4]; }
@@ -209,29 +201,17 @@
             }
         }
 
-        // Rita bakgrund (vi döljer trottoar+gata i bilden)
-        // Vi ritar bilden större än canvas så att trottoaren döljs nedanför groundY
         ctx.drawImage(backgroundImage, bgScroll, -h*0.1, w * bgScale, h * bgScale);
         ctx.drawImage(backgroundImage, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
-        
-        // Asfalt
         ctx.fillStyle = "#333"; ctx.fillRect(0, groundY, w, h - groundY);
         ctx.fillStyle = "rgba(255,255,255,0.3)";
-        // FLER ASFLATSLINJER FÖR ATT MARKERA BREDD
-        for(let i=0; i<w+250; i+=250) {
-            ctx.fillRect(i + (bgScroll%250), groundY + (h-groundY)*0.3, 100, h*0.012);
-            ctx.fillRect(i + (bgScroll%250), groundY + (h-groundY)*0.7, 100, h*0.012);
-        }
+        for(let i=0; i<w+300; i+=300) ctx.fillRect(i + (bgScroll%300), groundY + (h-groundY)*0.5, 120, h*0.015);
 
-        // Föremål
         collectables.forEach(c => ctx.drawImage(itemImages[c.type], c.x, c.y, c.size, c.size));
-
-        // Spelare
         ctx.drawImage(playerImage, player.x, player.y, playerSize, playerSize);
 
-        // Partiklar
         particles.forEach((p, i) => {
-            p.x += p.vx; p.y += p.vy; p.vy += 0.6; p.l -= 0.018;
+            p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.015;
             ctx.globalAlpha = p.l; ctx.fillStyle = p.c;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
             if(p.l <= 0) particles.splice(i,1);
@@ -239,20 +219,16 @@
         ctx.globalAlpha = 1;
 
         if (gameActive) {
-            ctx.fillStyle = "rgba(0,0,0,0.7)"; 
-            let uiX = 20, uiY = 20;
-            ctx.fillRect(uiX, uiY, 220, 90);
+            ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(20, 20, 220, 90);
             ctx.fillStyle = "white"; ctx.font = "bold 22px Courier";
-            ctx.fillText("✨ Samlade: " + itemsCollected, uiX + 20, uiY + 38);
-            ctx.fillStyle = "gold"; ctx.font = "bold 24px Courier";
-            ctx.fillText("⭐ LEVEL: " + level, uiX + 20, uiY + 70);
+            ctx.fillText("✨ Samlade: " + itemsCollected, 40, 55);
+            ctx.fillStyle = "gold"; ctx.fillText("⭐ LEVEL: " + level, 40, 85);
         }
         requestAnimationFrame(gameLoop);
     }
     
     window.addEventListener('resize', resize);
     resize();
-
     let imgCount = 0;
     function count() { imgCount++; if(imgCount === 5) gameLoop(); }
     backgroundImage.onload = count; playerImage.onload = count;
