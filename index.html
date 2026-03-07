@@ -54,8 +54,7 @@
     volumeSlider.value = volSettings.start;
     document.getElementById("device-info").innerText = `🎵 Musik (${volSettings.label})`;
 
-    // --- NY WEB AUDIO MOTOR FÖR IPHONE ---
-    let audioCtx, musicSource, gainNode;
+    let audioCtx, musicSource, gainNode, gameMusic;
 
     function initAudio() {
         if (!audioCtx) {
@@ -64,16 +63,12 @@
             gainNode.connect(audioCtx.destination);
             gainNode.gain.value = volumeSlider.value;
 
-            // Skapa musikelementet
-            const musicEl = new Audio('music.mp3');
-            musicEl.loop = true;
-            musicEl.crossOrigin = "anonymous";
-            musicSource = audioCtx.createMediaElementSource(musicEl);
+            gameMusic = new Audio('music.mp3');
+            gameMusic.loop = true;
+            gameMusic.crossOrigin = "anonymous";
+            musicSource = audioCtx.createMediaElementSource(gameMusic);
             musicSource.connect(gainNode);
-            
-            return musicEl;
         }
-        return null;
     }
 
     const backgroundImage = new Image(); backgroundImage.src = 'pixel_background.png'; 
@@ -83,9 +78,7 @@
 
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
     const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
-    let gameMusic;
 
-    // Slidern kontrollerar nu GainNode (tvingar iPhone att lyda)
     volumeSlider.addEventListener("input", (e) => {
         if (gainNode) gainNode.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.05);
     });
@@ -109,7 +102,6 @@
         const startTime = audioCtx.currentTime;
         gainNode.gain.exponentialRampToValueAtTime(Math.max(targetValue, 0.001), startTime + duration/1000);
         
-        // Uppdatera slider-visningen visuellt
         const startVal = parseFloat(volumeSlider.value);
         const startT = performance.now();
         function updateSlider(now) {
@@ -121,7 +113,7 @@
     }
 
     function startGame() {
-        if (!audioCtx) gameMusic = initAudio();
+        initAudio();
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
         gameActive = true;
@@ -130,7 +122,6 @@
         
         playSoundEffect(wowSound);
         gameMusic.play().catch(() => {});
-
         autoFadeVolume(volSettings.game, 2500);
     }
 
@@ -217,7 +208,7 @@
     
     window.addEventListener('resize', resize);
     resize();
-    gameLoop();
+    gameLoop(); // Spelet startar rita direkt
 </script>
 </body>
 </html>
