@@ -5,139 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Skate-bajsen</title>
     <style>
-        body { 
-            margin: 0; padding: 0; background-color: #ffb6c1; 
-            display: flex; justify-content: center; align-items: center; 
-            height: 100vh; font-family: 'Courier New', Courier, monospace;
-            overflow: hidden; touch-action: none;
-        }
+        body { margin: 0; padding: 0; background-color: #ffb6c1; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
-        
-        #rotate-message {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #ffb6c1; color: #333; z-index: 200;
-            flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; padding: 20px; box-sizing: border-box;
-        }
-
-        #ui-layer {
-            position: absolute; bottom: 20px; right: 20px; z-index: 50;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        .game-btn {
-            padding: 12px 20px; font-size: 14px; font-weight: bold;
-            color: #333; background-color: rgba(255,255,255,0.8);
-            border: 3px solid #333; cursor: pointer; text-transform: uppercase;
-        }
-        #start-menu {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; color: white; z-index: 100;
-        }
-        #start-btn-menu {
-            padding: 25px 50px; font-size: 32px; background-color: #f1c40f; 
-            border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer;
-        }
+        #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 200; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; }
+        #ui-layer { position: absolute; bottom: 20px; right: 20px; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
+        .game-btn { padding: 12px 20px; font-size: 14px; font-weight: bold; color: #333; background-color: rgba(255,255,255,0.8); border: 3px solid #333; cursor: pointer; text-transform: uppercase; }
+        #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; }
+        #start-btn-menu { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; }
         h1 { font-size: 12vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div id="game-wrapper">
-    <div id="rotate-message">
-        <h1>🔄</h1>
-        <h2>Lägg ner skärmen för bäst upplevelse!</h2>
-    </div>
-
+    <div id="rotate-message"><h1>🔄</h1><h2>Vänd mobilen för att skejta!</h2></div>
     <canvas id="gameCanvas"></canvas>
-    
     <div id="start-menu">
         <h1>SKATE-BAJSEN</h1>
         <p>Tryck för att hoppa!</p>
         <button id="start-btn-menu">STARTA!</button>
     </div>
-
-    <div id="ui-layer">
-        <button id="mute-btn" class="game-btn">🔊 LJUD PÅ</button>
-    </div>
+    <div id="ui-layer"><button id="mute-btn" class="game-btn">🔊 LJUD PÅ</button></div>
 </div>
 
 <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    const rotateMsg = document.getElementById("rotate-message");
-    const startMenu = document.getElementById("start-menu");
-    const muteBtn = document.getElementById("mute-btn");
+    const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
+    const rotateMsg = document.getElementById("rotate-message"), startMenu = document.getElementById("start-menu"), muteBtn = document.getElementById("mute-btn");
 
     let gameActive = false, itemsCollected = 0, totalItemsSpawned = 0, level = 1, isMuted = false, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed, bgScale;
-
-    function resize() {
-        w = window.innerWidth;
-        h = window.innerHeight;
-        canvas.width = w;
-        canvas.height = h;
-
-        if (h > w && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            rotateMsg.style.display = "flex";
-        } else {
-            rotateMsg.style.display = "none";
-        }
-
-        groundY = h * 0.75;
-        playerSize = Math.min(w, h) * 0.25;
-        itemSize = playerSize * 0.8;
-        
-        // SÄNKT FART: Gått från 0.009 till 0.007 för bättre sikt
-        bgSpeed = w * 0.007; 
-        bgScale = groundY / (h * 0.65);
-
-        if(gameActive) {
-            player.gravity = h * 0.0024; 
-            player.jumpPower = h * -0.044;
-        }
-    }
 
     const skyColors = ['#87CEEB', '#98FB98', '#DDA0DD', '#FFFACD']; 
     const backgroundImage = new Image(); backgroundImage.src = 'pixel_background.png'; 
     const playerImage = new Image(); playerImage.src = 'bajskorv_sprite.png';
     const itemImages = { unicorn: new Image(), star: new Image(), heart: new Image() };
-    itemImages.unicorn.src = 'unicorn_sprite.png';
-    itemImages.star.src = 'star_sprite.png';
-    itemImages.heart.src = 'heart_sprite.png';
+    itemImages.unicorn.src = 'unicorn_sprite.png'; itemImages.star.src = 'star_sprite.png'; itemImages.heart.src = 'heart_sprite.png';
 
+    // LJUDINSTÄLLNINGAR
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
-    const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'); 
-    const wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
+    const neighSound = new Audio('neigh.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const bgMusic = new Audio('music.mp3');
     
-    // MUSIKBALANS: Sänkt till 0.05 för att ge plats åt ljudeffekter
-    bgMusic.volume = 0.05; bgMusic.loop = true; 
+    // MUSIKEN ÄR NU NÄSTAN TYST (0.01) FÖR ATT PRIORITERA EFFEKTERNA
+    bgMusic.volume = 0.01; bgMusic.loop = true; 
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
     let collectables = [], particles = [], spawnTimer = 0;
 
-    function playSound(sound, vol = 1.0) { 
+    function resize() {
+        w = window.innerWidth; h = window.innerHeight;
+        canvas.width = w; canvas.height = h;
+        rotateMsg.style.display = (h > w && /Android|iPhone|iPod/i.test(navigator.userAgent)) ? "flex" : "none";
+        groundY = h * 0.75; playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
+        bgSpeed = w * 0.006; 
+        bgScale = groundY / (h * 0.65);
+        player.x = w * 0.22; 
+        if(gameActive) { player.gravity = h * 0.0024; player.jumpPower = h * -0.044; }
+    }
+
+    function unlockAudio() {
+        const allSounds = [...fartSounds, neighSound, braJobbatSound, wowSound, megaBajsSound, bgMusic];
+        allSounds.forEach(s => {
+            s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(e => {});
+        });
+    }
+
+    function playSoundEffect(sound) { 
         if (!isMuted) { 
-            sound.volume = vol; // Ljudeffekter körs på hög volym
+            // TVINGA MUSIKEN ATT BLI ÄNNU TYSTARE NÄR EN EFFEKT SPELAS
+            bgMusic.volume = 0.005;
+            sound.volume = 1.0; 
             sound.currentTime = 0; 
-            sound.play().catch(e=>{}); 
+            sound.play().then(() => {
+                // Återställ musikens volym lite efter effekten
+                setTimeout(() => { if(!isMuted) bgMusic.volume = 0.01; }, 1000);
+            }).catch(e => {}); 
         } 
     }
 
     function startGame() {
+        unlockAudio();
         gameActive = true;
         startMenu.style.display = "none";
         player.y = groundY - playerSize;
-        player.gravity = h * 0.0024; 
-        player.jumpPower = h * -0.044;
-        if (!isMuted) bgMusic.play().catch(e=>{});
+        player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
+        if (!isMuted) bgMusic.play();
     }
 
     muteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        isMuted = !isMuted;
+        e.stopPropagation(); isMuted = !isMuted;
         muteBtn.innerText = isMuted ? "🔇 LJUD AV" : "🔊 LJUD PÅ";
         if (isMuted) bgMusic.pause(); else if (gameActive) bgMusic.play();
     });
@@ -147,9 +104,8 @@
     function handleJump() {
         if (!gameActive) startGame();
         else if (!player.isJumping) {
-            player.velocityY = player.jumpPower;
-            player.isJumping = true;
-            if (megaBajsSound.paused) playSound(fartSounds[Math.floor(Math.random() * fartSounds.length)], 1.0);
+            player.velocityY = player.jumpPower; player.isJumping = true;
+            if (megaBajsSound.paused) playSoundEffect(fartSounds[Math.floor(Math.random() * fartSounds.length)]);
         }
     }
 
@@ -159,63 +115,56 @@
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
         if (gameActive) {
-            bgScroll -= bgSpeed;
-            if(bgScroll <= -w * bgScale) bgScroll = 0;
-            player.velocityY += player.gravity;
-            player.y += player.velocityY;
+            bgScroll -= bgSpeed; if(bgScroll <= -w * bgScale) bgScroll = 0;
+            player.velocityY += player.gravity; player.y += player.velocityY;
             if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
-
             spawnTimer++;
-            if(spawnTimer > 55) { // Något lugnare spawn-takt
+            if(spawnTimer > 60) {
                 totalItemsSpawned++;
                 let type = ['unicorn', 'star', 'heart'][Math.floor(Math.random()*3)];
                 let s = (totalItemsSpawned % 7 === 0) ? itemSize * 1.6 : itemSize;
                 collectables.push({ x: w, y: groundY - s - Math.random()*(h*0.35), size: s, type, isBoss: totalItemsSpawned % 7 === 0 });
                 spawnTimer = 0;
             }
-
             for(let i = collectables.length-1; i>=0; i--) {
-                let c = collectables[i];
-                c.x -= bgSpeed;
+                let c = collectables[i]; c.x -= bgSpeed;
                 if(c.x + c.size < 0) collectables.splice(i, 1);
-                
                 let pPad = playerSize * 0.15;
                 if(player.x + pPad < c.x + c.size && player.x + playerSize - pPad > c.x && player.y < c.y + c.size && player.y + playerSize > c.y) {
                     itemsCollected++;
                     if(itemsCollected % 25 === 0) {
-                        playSound(megaBajsSound, 1.0);
+                        playSoundEffect(megaBajsSound);
                         setTimeout(() => {
-                            for(let b=0; b<100; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*20, vy: (Math.random()-0.8)*25, s: Math.random()*10+5, c: '#8B4513', l: 2.5 });
+                            if (gameActive) {
+                                playSoundEffect(fartSounds[0]);
+                                for(let b=0; b<120; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*20, vy: (Math.random()-0.8)*25, s: Math.random()*10+5, c: '#8B4513', l: 2.5 });
+                            }
                         }, 3000);
                     }
                     if (megaBajsSound.paused) {
-                        if(c.isBoss) playSound(wowSound, 1.0);
-                        else if(itemsCollected % 12 === 0) playSound(braJobbatSound, 1.0);
-                        else if(c.type === 'unicorn') playSound(neighSound, 0.8);
+                        if(c.isBoss) playSoundEffect(wowSound);
+                        else if(itemsCollected % 12 === 0) playSoundEffect(braJobbatSound);
+                        else if(c.type === 'unicorn') playSoundEffect(neighSound);
                     }
                     collectables.splice(i,1);
                     if(itemsCollected % 5 === 0) { level++; canvas.style.backgroundColor = skyColors[(level-1)%4]; }
                 }
             }
         }
-
         ctx.drawImage(backgroundImage, bgScroll, -h*0.1, w * bgScale, h * bgScale);
         ctx.drawImage(backgroundImage, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
         ctx.fillStyle = "#333"; ctx.fillRect(0, groundY, w, h - groundY);
         ctx.fillStyle = "rgba(255,255,255,0.3)";
-        for(let i=0; i<w+300; i+=300) ctx.fillRect(i + (bgScroll%300), groundY + (h-groundY)*0.5, 120, h*0.015);
-
+        for(let i=0; i<w+300; i+=300) ctx.fillRect(i + (bgScroll%300), groundY + (h-groundY)*0.5, 120, h*0.012);
         collectables.forEach(c => ctx.drawImage(itemImages[c.type], c.x, c.y, c.size, c.size));
         ctx.drawImage(playerImage, player.x, player.y, playerSize, playerSize);
-
         particles.forEach((p, i) => {
             p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.015;
             ctx.globalAlpha = p.l; ctx.fillStyle = p.c;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size || p.s, 0, 7); ctx.fill();
             if(p.l <= 0) particles.splice(i,1);
         });
         ctx.globalAlpha = 1;
-
         if (gameActive) {
             ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(20, 20, 220, 90);
             ctx.fillStyle = "white"; ctx.font = "bold 22px Courier";
