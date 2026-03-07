@@ -14,7 +14,6 @@
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
         
-        /* Mobil-meddelande för stående läge */
         #rotate-message {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #ffb6c1; color: #333; z-index: 200;
@@ -80,7 +79,6 @@
         canvas.width = w;
         canvas.height = h;
 
-        // Visa roterings-meddelande om mobilen är stående
         if (h > w && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
             rotateMsg.style.display = "flex";
         } else {
@@ -91,8 +89,8 @@
         playerSize = Math.min(w, h) * 0.25;
         itemSize = playerSize * 0.8;
         
-        // JÄMNARE FART: Inte för snabbt i liggande läge
-        bgSpeed = w * 0.009; 
+        // SÄNKT FART: Gått från 0.009 till 0.007 för bättre sikt
+        bgSpeed = w * 0.007; 
         bgScale = groundY / (h * 0.65);
 
         if(gameActive) {
@@ -114,15 +112,15 @@
     const wowSound = new Audio('wow.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const bgMusic = new Audio('music.mp3');
     
-    // LJUD-BALANS: Musiken är nu mycket tystare (0.1)
-    bgMusic.volume = 0.1; bgMusic.loop = true; 
+    // MUSIKBALANS: Sänkt till 0.05 för att ge plats åt ljudeffekter
+    bgMusic.volume = 0.05; bgMusic.loop = true; 
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
     let collectables = [], particles = [], spawnTimer = 0;
 
     function playSound(sound, vol = 1.0) { 
         if (!isMuted) { 
-            sound.volume = vol;
+            sound.volume = vol; // Ljudeffekter körs på hög volym
             sound.currentTime = 0; 
             sound.play().catch(e=>{}); 
         } 
@@ -151,7 +149,7 @@
         else if (!player.isJumping) {
             player.velocityY = player.jumpPower;
             player.isJumping = true;
-            if (megaBajsSound.paused) playSound(fartSounds[Math.floor(Math.random() * fartSounds.length)], 0.8);
+            if (megaBajsSound.paused) playSound(fartSounds[Math.floor(Math.random() * fartSounds.length)], 1.0);
         }
     }
 
@@ -168,7 +166,7 @@
             if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
 
             spawnTimer++;
-            if(spawnTimer > 50) {
+            if(spawnTimer > 55) { // Något lugnare spawn-takt
                 totalItemsSpawned++;
                 let type = ['unicorn', 'star', 'heart'][Math.floor(Math.random()*3)];
                 let s = (totalItemsSpawned % 7 === 0) ? itemSize * 1.6 : itemSize;
@@ -191,9 +189,9 @@
                         }, 3000);
                     }
                     if (megaBajsSound.paused) {
-                        if(c.isBoss) playSound(wowSound, 0.9);
-                        else if(itemsCollected % 12 === 0) playSound(braJobbatSound, 0.9);
-                        else if(c.type === 'unicorn') playSound(neighSound, 0.7);
+                        if(c.isBoss) playSound(wowSound, 1.0);
+                        else if(itemsCollected % 12 === 0) playSound(braJobbatSound, 1.0);
+                        else if(c.type === 'unicorn') playSound(neighSound, 0.8);
                     }
                     collectables.splice(i,1);
                     if(itemsCollected % 5 === 0) { level++; canvas.style.backgroundColor = skyColors[(level-1)%4]; }
