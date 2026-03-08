@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: LEVEL INTERACT EDITION</title>
+    <title>Skate-bajsen: TOTAL AUDIO UNLOCK</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; transition: background-color 0.5s; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
         canvas { display: block; width: 100%; height: 100%; outline: none; }
+        
         #game-ui { position: absolute; top: 20px; left: 20px; color: #f1c40f; font-size: 24px; font-weight: bold; text-shadow: 2px 2px #000; z-index: 95; pointer-events: none; }
         #progress-bar-bg { width: 200px; height: 15px; background: rgba(0,0,0,0.5); border: 2px solid #f1c40f; margin-top: 5px; }
         #progress-bar-fill { width: 0%; height: 100%; background: #f1c40f; transition: width 0.2s; }
         
-        /* Intro & Mellan-meny */
-        #level-intro { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; background: rgba(0,0,0,0.85); }
-        #level-intro-box { padding: 30px 60px; color: white; font-size: 40px; font-weight: bold; border: 5px solid white; text-transform: uppercase; text-align: center; box-shadow: 0 0 30px rgba(0,0,0,0.8); margin-bottom: 20px; }
+        /* Intro & Mellan-meny för Audio Unlock */
+        #level-intro { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300; background: rgba(0,0,0,0.9); }
+        #level-intro-box { padding: 30px 60px; color: white; font-size: 40px; font-weight: bold; border: 5px solid white; text-transform: uppercase; text-align: center; box-shadow: 0 0 30px rgba(0,0,0,0.8); margin-bottom: 30px; }
 
         #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a1a2e 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
         .menu-sprite { height: 25vh; margin-bottom: 10px; animation: menuFloat 3s infinite ease-in-out; }
@@ -22,7 +23,7 @@
         
         .lvl-btn { width: 50px; height: 50px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; }
         .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 15px #f1c40f; transform: scale(1.1); }
-        .game-btn-large { padding: 20px 50px; font-size: 28px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; box-shadow: 0 8px 0 #d35400; }
+        .game-btn-large { padding: 25px 60px; font-size: 28px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; box-shadow: 0 8px 0 #d35400; }
         
         #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 500; text-align: center; background-color: #1a1a2e; }
         #ui-layer { position: absolute; bottom: 25px; right: 25px; z-index: 400; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 12px; border: 2px solid #f1c40f; }
@@ -102,16 +103,15 @@
     };
     let gameMusic = new Audio(); gameMusic.loop = true;
 
+    // Tvingar mobilen att acceptera ljud
     function finalAudioUnlock() {
-        // Tvinga uppspelning av tysta ljud för att låsa upp mobil-ljudet
         Object.values(sounds).forEach(s => {
             if(Array.isArray(s)) { s.forEach(a => { a.muted = true; a.play().then(() => { a.pause(); a.muted = false; a.currentTime = 0; }); }); }
             else { s.muted = true; s.play().then(() => { s.pause(); s.muted = false; s.currentTime = 0; }); }
         });
         gameMusic.play().then(() => { gameMusic.pause(); }).catch(() => {});
         
-        introDiv.style.display = "none"; 
-        gameActive = true;
+        introDiv.style.display = "none"; gameActive = true;
         if(currentLevel < 6) { gameUI.style.display = "block"; updateUI(); } else { gameUI.style.display = "none"; bossHealth = 200; }
         gameMusic.src = currentLevel === 1 ? 'music.mp3' : `music${currentLevel}.mp3`; 
         gameMusic.volume = parseFloat(volumeSlider.value);
@@ -167,17 +167,26 @@
 
     function handleJump() {
         if(!gameActive || isEndingLevel) return;
-        if(!player.isJumping) { player.vY = player.jump; player.isJumping = true; sounds.fart[Math.floor(Math.random()*3)].play(); }
-        else if(currentLevel === 6 && hasPaperAmmo > 0) { hasPaperAmmo--; projectile = {x: player.x, y: player.y}; player.rot += 360; }
+        if(!player.isJumping) { 
+            player.vY = player.jump; player.isJumping = true; 
+            sounds.fart[Math.floor(Math.random()*3)].play(); 
+        } else if(currentLevel === 6 && hasPaperAmmo > 0) {
+            hasPaperAmmo--; projectile = {x: player.x, y: player.y}; player.rot += 360;
+        }
     }
 
     function spawnPoopFest() {
         sounds.mega.currentTime = 0; sounds.mega.play();
+        // MAXAD FÖRDRÖJNING: 3,6 sekunder
         setTimeout(() => {
             for(let j=0; j<120; j++) {
-                particles.push({ x: player.x + playerSize/2, y: player.y + playerSize/2, vx: Math.random()*40 - 20, vy: Math.random()*-30 - 5, c: '#8B4513', l: 2.5, grav: 0.8 });
+                particles.push({ 
+                    x: player.x + playerSize/2, y: player.y + playerSize/2, 
+                    vx: Math.random()*20 - 10, vy: Math.random()*-15 - 5,
+                    c: '#8B4513', l: 2.5, grav: 1.2 // TYNGRE GRAVITATION
+                });
             }
-        }, 1600);
+        }, 3600);
     }
 
     function gameLoop() {
@@ -238,10 +247,10 @@
         }
         if(boostTimer > 0) boostTimer--;
         ctx.save(); ctx.translate(player.x+playerSize/2, player.y+playerSize/2); ctx.rotate(player.rot*Math.PI/180);
-        if(boostTimer > 0) ctx.drawImage(assets.fire, -playerSize + 5, -playerSize/4, playerSize, playerSize/2); // Flamm-position
+        if(boostTimer > 0) ctx.drawImage(assets.fire, -playerSize + 5, -playerSize/4, playerSize, playerSize/2); // FLAMMA I BAKEN
         ctx.drawImage(assets.player, -playerSize/2, -playerSize/2, playerSize, playerSize); ctx.restore();
         particles.forEach((p, i) => { p.x+=p.vx; p.vy += (p.grav || 0.4); p.y+=p.vy; p.l-=0.015; ctx.globalAlpha=Math.max(0, p.l); ctx.fillStyle=p.c; ctx.fillRect(p.x,p.y,12,12); if(p.l<=0) particles.splice(i,1); });
-            ctx.restore();
+        ctx.restore();
     }
 
     function resize() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; groundY = h*0.75; playerSize = h*0.25; itemSizeBase = playerSize*0.65; if(!isEndingLevel) player.x = w*0.2; player.y = groundY-playerSize; }
@@ -249,7 +258,6 @@
     window.addEventListener('touchstart', (e) => { if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') handleJump(); });
     window.addEventListener('keydown', (e) => { if(e.code === "Space") handleJump(); });
     window.addEventListener('resize', checkOrientation); checkOrientation(); gameLoop();
-    setInterval(() => { if(gameActive) updateVol(); }, 1000);
 </script>
 </body>
 </html>
