@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: PRO EDITION</title>
+    <title>Skate-bajsen: BOSS SOUND UPGRADE</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -69,7 +69,6 @@
     let bossHealth = 200, maxBossHealth = 200, hasPaperAmmo = 0, pipeTimer = 0, projectile = null, playerRotation = 0;
     let bossHitTimer = 0;
 
-    // Nya nivåmål
     const levelGoals = [30, 35, 40, 40, 50];
 
     let player = { x: 0, y: 0, velocityY: 0, gravity: 0.8, jumpPower: -18, isJumping: false };
@@ -101,7 +100,7 @@
         hit: new Audio('hit.mp3'), win: new Audio('win.mp3'), jump: new Audio('superprutt.m4a'),
         yeah: new Audio('yeah.m4a'), mega: new Audio('baaaajs.m4a'), next: new Audio('nextlevel.mp3'),
         braJobbat: new Audio('brajobbat.m4a'), choklad: new Audio('choklad.m4a'),
-        bossOuch: [new Audio('ouch.m4a'), new Audio('Aj.m4a')]
+        bossOuch: [new Audio('ouch.m4a'), new Audio('Aj.m4a'), new Audio('dinlilla.m4a')] // Tillagt dinlilla.m4a
     };
 
     let gameMusic = new Audio(); gameMusic.loop = true;
@@ -110,8 +109,13 @@
     function stopAllAudio() {
         gameMusic.pause();
         gameMusic.currentTime = 0;
-        // Tvinga tystnad på alla kända ljudkanaler
-        Object.values(sounds).flat().forEach(s => { s.pause(); s.currentTime = 0; });
+        Object.keys(sounds).forEach(key => {
+            if (Array.isArray(sounds[key])) {
+                sounds[key].forEach(s => { s.pause(); s.currentTime = 0; });
+            } else {
+                sounds[key].pause(); sounds[key].currentTime = 0;
+            }
+        });
     }
 
     function playSound(s) { s.currentTime = 0; s.volume = 1.0; s.play().catch(()=>{}); }
@@ -119,7 +123,6 @@
 
     function updateMusicVolume() {
         let baseVol = parseFloat(volumeSlider.value);
-        // Höj volymen om det är boss-nivån
         gameMusic.volume = currentLevel === 6 ? Math.min(1.0, baseVol * 2) : baseVol;
     }
 
@@ -218,17 +221,17 @@
                 projectile.x += projectile.vx;
                 ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
                 if(projectile.x > bossX && projectile.x < bossX + playerSize*1.6 && projectile.y > bossY && projectile.y < bossY + playerSize*1.8) {
-                    bossHealth -= 15; bossHitTimer = 20; playSound(sounds.hit);
-                    playSound(sounds.bossOuch[Math.floor(Math.random()*sounds.bossOuch.length)]);
+                    bossHealth -= 15; bossHitTimer = 20; 
+                    playSound(sounds.bossOuch[Math.floor(Math.random()*sounds.bossOuch.length)]); // Slumpar ljud vid träff
                     projectile = null;
                 } else if(projectile.x > w) projectile = null;
             }
 
             if(bossHealth <= 0) { 
                 gameActive = false; 
-                stopAllAudio(); // Rejäl ljudstopp vid vinst
+                stopAllAudio();
                 document.getElementById("win-screen").style.display="flex"; 
-                playSound(sounds.win); 
+                setTimeout(() => playSound(sounds.win), 50); 
             }
             spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bossX, y: bossY+100, isPaper: true, vx: -12, sW: 60, sH: 60}); spawnTimer = 0; }
         } else {
@@ -293,7 +296,6 @@
             if(currentLevel === 6) {
                 ctx.fillText(`🧻 AMMO: ${hasPaperAmmo}`, 20, 40); 
             } else {
-                // Progress-räknare
                 ctx.fillText(`✨ ${itemsCollected} / ${levelGoals[currentLevel-1]}`, 20, 40); 
             }
         }
