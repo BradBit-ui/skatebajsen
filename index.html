@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: BOSS SHAKE EDITION</title>
+    <title>Skate-bajsen: BOSS INSTRUCTIONS & SHAKE</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -19,6 +19,7 @@
         #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; pointer-events: auto; }
         .wow-text { position: absolute; color: #f1c40f; font-size: 80px; font-weight: bold; z-index: 200; pointer-events: none; animation: wowPop 1s ease-out forwards; text-shadow: 4px 4px 0px #d35400; }
         @keyframes wowPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+        #boss-instr-overlay { position: absolute; top: 20%; width: 100%; color: #f1c40f; font-size: 30px; font-weight: bold; text-align: center; z-index: 80; pointer-events: none; text-shadow: 2px 2px 5px black; }
     </style>
 </head>
 <body onclick="canvas.focus()">
@@ -26,6 +27,7 @@
 <div id="orientation-overlay"><h1>VÄND PÅ MOBILEN</h1><p>SKATEA I LANDSCAPE MODE! 💩🛹</p></div>
 
 <div id="game-wrapper">
+    <div id="boss-instr-overlay" style="display:none;">FÅNGA RULLEN - HOPPA FÖR ATT SKJUTA!</div>
     <canvas id="gameCanvas" tabindex="0"></canvas>
     <div id="wow-container"></div>
     <div id="level-intro" style="display:none;"><h1 id="level-intro-text" style="font-size: 100px; text-shadow: 5px 5px 0 black;">LEVEL 1</h1></div>
@@ -91,8 +93,14 @@
         const intro = document.getElementById("level-intro");
         intro.style.display = "flex"; intro.style.backgroundColor = introColors[currentLevel-1];
         document.getElementById("level-intro-text").innerText = currentLevel === 6 ? "BOSS FIGHT!" : "LEVEL " + currentLevel;
+        
         setTimeout(() => {
             intro.style.display = "none"; resize(); gameActive = true; transitioning = false;
+            // Visa instruktioner om det är bossen
+            if(currentLevel === 6) {
+                document.getElementById("boss-instr-overlay").style.display = "block";
+                setTimeout(() => { document.getElementById("boss-instr-overlay").style.display = "none"; }, 4000);
+            }
             gameMusic.src = ['music.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3', 'music5.mp3', 'music6.mp3'][currentLevel-1];
             gameMusic.volume = parseFloat(volumeSlider.value); gameMusic.play();
         }, 1500);
@@ -114,9 +122,10 @@
         if (!gameActive) return;
 
         ctx.save();
-        if (screenShake > 0) { // SKÄRMSKAKNING LOGIK
+        // SKÄRMSKAKNING LOGIK
+        if (screenShake > 0) {
             ctx.translate(Math.random() * screenShake - screenShake/2, Math.random() * screenShake - screenShake/2);
-            screenShake *= 0.9;
+            screenShake *= 0.85; // Avtar snabbt
             if (screenShake < 0.5) screenShake = 0;
         }
 
@@ -138,9 +147,10 @@
             if(projectile) {
                 projectile.x += 15; ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
                 if(projectile.x > bX && projectile.x < bX+playerSize*1.6 && projectile.y > bY && projectile.y < bY+playerSize*1.8) {
-                    bossHealth -= 15; bossHitTimer = 20; screenShake = 15; // TRIGGA SKAKNING
+                    bossHealth -= 15; bossHitTimer = 20; 
+                    screenShake = 25; // Kraftig skakning
                     let s = sounds.bossOuch[Math.floor(Math.random()*3)]; 
-                    s.volume = 1.0; s.currentTime = 0; s.play(); // VOLYMBOOST
+                    s.volume = 1.0; s.currentTime = 0; s.play();
                     projectile = null;
                 } else if(projectile.x > w) projectile = null;
             }
@@ -170,7 +180,6 @@
         for(let i = collectables.length - 1; i >= 0; i--) {
             let c = collectables[i]; c.x += (currentLevel === 6 ? c.vx : -(boostTimer > 0 ? bgSpeed * 2.5 : bgSpeed));
             if(!transitioning && player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                // CHOCO FIX: Endast candy1.png
                 if(currentLevel === 2 && c.img && c.img.src.endsWith('candy1.png') && !c.soundDone) { 
                     c.soundDone = true; sounds.choklad.currentTime = 0; sounds.choklad.play(); c.x = -2000; 
                 }
