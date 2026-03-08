@@ -3,17 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: JUMP & VOLUME FIXED</title>
+    <title>Skate-bajsen: THE DEFINITIVE EDITION</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
         canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; touch-action: none; }
-        #start-menu, #level-menu, #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
-        .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 20px; pointer-events: auto; }
+        
+        /* Menyerna får pointer-events: none så de inte blockerar klick på spelet under */
+        #start-menu, #level-menu, #win-screen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; color: white; z-index: 100; 
+            text-align: center; pointer-events: auto; 
+        }
+        
+        .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 20px; }
         .level-selector { display: flex; gap: 10px; margin: 15px 0; }
         .lvl-btn { width: 45px; height: 45px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 18px; }
         .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 15px #f1c40f; }
-        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; }
+        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; pointer-events: auto; }
         @keyframes wowPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
         .wow-text { position: absolute; color: #f1c40f; font-size: 80px; font-weight: bold; z-index: 200; pointer-events: none; animation: wowPop 1s ease-out forwards; text-shadow: 4px 4px 0px #d35400; }
     </style>
@@ -95,17 +103,16 @@
     let gameMusic = new Audio(); gameMusic.loop = true;
     let currentMusicFile = 'music.mp3';
 
-    // LJUD-FUNKTION MED AKTUELL VOLYM
+    // LJUDEFFEKTER SPELAS ALLTID PÅ VOLYM 1.0
     function playSound(s) { 
         s.currentTime = 0; 
-        s.volume = parseFloat(volumeSlider.value); 
+        s.volume = 1.0; 
         s.play().catch(()=>{}); 
     }
 
-    // UPPDATERA VOLYM I REALTID
+    // ENDAST MUSIKEN PÅVERKAS AV SLIDERN
     volumeSlider.addEventListener('input', () => {
-        const val = parseFloat(volumeSlider.value);
-        if(gameMusic) gameMusic.volume = val;
+        if(gameMusic) gameMusic.volume = parseFloat(volumeSlider.value);
     });
 
     function triggerWow(x, y) {
@@ -127,6 +134,9 @@
     function resize() {
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
+        // ÅTERSTÄLLD HIMMELSFÄRG
+        const skyColors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16", "#ffe0f0", "#1a1a1a"];
+        canvas.style.backgroundColor = skyColors[currentLevel-1];
         groundY = (currentLevel === 1) ? h * 0.75 : h * 0.82;
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.75;
         if(!transitioning) {
@@ -146,7 +156,7 @@
         }
     }
 
-    // GLOBAL LYSSNARE FÖR ATT GARANTERA HOPP
+    // GLOBAL INPUT FIX FÖR HOPP
     window.addEventListener("mousedown", (e) => { 
         if(gameActive && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') jumpAction(); 
     });
@@ -199,7 +209,7 @@
                 ctx.drawImage(bg, bgScroll, 0, w, h); ctx.drawImage(bg, bgScroll + w, 0, w, h);
             }
             if(transitioning) {
-                player.x += 15; player.velocityY = 0;
+                player.x += 15; player.velocityY = 0; // ÅKER UR BILD
             } else {
                 player.velocityY += player.gravity; player.y += player.velocityY;
                 if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
@@ -207,6 +217,7 @@
                 if(spawnTimer > 50) {
                     let imgSet = assets.items['lvl'+currentLevel];
                     if(imgSet) {
+                        // GULDBAJS TILLGÄNGLIG PÅ ALLA NIVÅER
                         let isGold = Math.random() < 0.05;
                         let isRandomBig = Math.random() < 0.15;
                         let typeIdx = Math.floor(Math.random()*3);
