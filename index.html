@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: PROPORTION FIX</title>
+    <title>Skate-bajsen: RED BOSS EDITION</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
@@ -24,7 +24,7 @@
 
 <div id="game-wrapper">
     <canvas id="gameCanvas" tabindex="0"></canvas>
-    <div id="level-intro" style="display:none;"><h1 id="level-intro-text" style="font-size: 100px;">LEVEL 1</h1></div>
+    <div id="level-intro" style="display:none;"><h1 id="level-intro-text" style="font-size: 100px; text-shadow: 4px 4px 0 black;">LEVEL 1</h1></div>
     <div id="start-menu">
         <img src="bajskorv_sprite.png" style="height: 35vh; margin-bottom: 20px;">
         <h1>SKATE-BAJSEN</h1>
@@ -56,6 +56,8 @@
     let winPlayed = false, chocoLock = false;
 
     const levelGoals = [30, 35, 40, 40, 50];
+    const introColors = ["#3498db", "#e91e63", "#2ecc71", "#9b59b6", "#e67e22", "#c0392b"]; // Färger för intro-skärmar
+    
     let player = { x: 0, y: 0, velocityY: 0, gravity: 0.8, jumpPower: -18, isJumping: false };
 
     const sounds = {
@@ -71,6 +73,7 @@
     const assets = { bg: [], player: new Image(), boss: new Image(), paper: new Image(), items: { lvl1: [], lvl2: [], lvl3: [], lvl4: [], lvl5: [] } };
     assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png';
     for(let i=1; i<=6; i++) { let img = new Image(); img.src = i===1?'pixel_background.png':`pixel_background${i}.png`; assets.bg.push(img); }
+    
     function loadLvl(l, i1, i2, i3) { 
         assets.items['lvl'+l] = [new Image(), new Image(), new Image()];
         assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3;
@@ -99,6 +102,8 @@
         document.getElementById("level-menu").style.display = "none";
         const intro = document.getElementById("level-intro");
         intro.style.display = "flex";
+        // Sätt unik bakgrundsfärg för presentationen
+        intro.style.backgroundColor = introColors[currentLevel-1]; 
         document.getElementById("level-intro-text").innerText = currentLevel === 6 ? "BOSS FIGHT!" : "LEVEL " + currentLevel;
         
         setTimeout(() => {
@@ -140,13 +145,19 @@
 
         if (currentLevel === 6) {
             let bX = w*0.75, bY = h*0.2 + Math.sin(Date.now()*0.003)*40;
+            
+            // Rita RÖD BOSS
+            ctx.save();
+            ctx.filter = 'sepia(1) saturate(10) hue-rotate(-50deg)'; // Gör bossen rödaktig
             ctx.drawImage(assets.boss, bX, bY, playerSize*1.8, playerSize*1.8);
+            ctx.restore();
+
             ctx.fillStyle = "red"; ctx.fillRect(bX, bY-30, playerSize*1.8, 10);
             ctx.fillStyle = "#2ecc71"; ctx.fillRect(bX, bY-30, (playerSize*1.8)*(bossHealth/200), 10);
             
             if(projectile) {
                 projectile.x += 15; ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
-                if(projectile.x > bX) { bossHealth -= 20; projectile = null; sounds.bossOuch[0].play(); }
+                if(projectile.x > bX) { bossHealth -= 20; projectile = null; sounds.bossOuch[Math.floor(Math.random()*3)].play(); }
             }
             if(bossHealth <= 0 && !winPlayed) { winPlayed = true; gameActive = false; gameMusic.pause(); sounds.win.play(); document.getElementById("win-screen").style.display="flex"; }
             spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bX, y: bY+100, isPaper: true, sW: 60, sH: 60}); spawnTimer = 0; }
@@ -156,7 +167,6 @@
                 let set = assets.items['lvl'+currentLevel];
                 if(set && set[0].complete) {
                     let img = set[Math.floor(Math.random()*3)];
-                    // Fix: Beräkna proportioner
                     let ratio = img.naturalWidth / img.naturalHeight;
                     let sH = itemSizeBase;
                     let sW = sH * ratio;
@@ -176,6 +186,7 @@
                 if(c.isPaper) { hasPaperAmmo++; sounds.jump.play(); }
                 else {
                     itemsCollected++;
+                    // Spela chokladljudet ENDAST på Level 2
                     if(currentLevel === 2 && !chocoLock) { 
                         chocoLock = true; sounds.choklad.play(); 
                         setTimeout(() => chocoLock = false, 300); 
