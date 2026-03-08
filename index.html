@@ -71,6 +71,9 @@
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
     const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const nextLevelSound = new Audio('nextlevel.mp3'), buttonSound = new Audio('button.mp3');
+    
+    // NYTT LJUD FÖR CHOKLAD
+    const chokladSound = new Audio('choklad.m4a');
 
     let currentMusicFile = 'music.mp3';
     let confetti = [];
@@ -97,11 +100,7 @@
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
         rotateMessage.style.display = (isMobile && h > w) ? "flex" : "none";
-        
-        // JUSTERING: Level 2 bakgrunden har en lägre horisont. 
-        // Vi sänker groundY från 0.75 till 0.85 för att pricka chokladvägen bättre.
         groundY = currentLevel === 1 ? h * 0.75 : h * 0.85;
-        
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
         bgScale = groundY / (h * 0.65);
         if(!transitioning) player.x = w * 0.22;
@@ -116,7 +115,7 @@
         gameActive = true; transitioning = false;
         startMenu.style.display = "none";
         levelMenu.style.display = "none";
-        resize(); // Uppdatera groundY baserat på level
+        resize(); 
         player.y = groundY - playerSize;
         player.x = w * 0.22;
         playSound(wowSound);
@@ -126,7 +125,7 @@
 
     function startLevel2() {
         playSound(buttonSound);
-        currentLevel = 2; // NU byter vi level officiellt
+        currentLevel = 2; 
         setTimeout(startGame, 100);
     }
 
@@ -181,8 +180,6 @@
 
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
-        
-        // LOGIK: Bakgrunden byts bara om currentLevel faktiskt har ändrats till 2
         let currentBG = currentLevel === 1 ? assets.bg1 : assets.bg2;
         ctx.drawImage(currentBG, bgScroll, -h*0.1, w * bgScale, h * bgScale);
         ctx.drawImage(currentBG, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
@@ -206,18 +203,21 @@
                 if(c.x + c.size < 0) { collectables.splice(i, 1); continue; }
                 if(player.x < c.x + c.size && player.x + playerSize > c.x && player.y < c.y + c.size && player.y + playerSize > c.y) {
                     itemsCollected++;
-                    // Vid 30 poäng: Starta utåkning, men BYT INTE level-siffran än
+                    
+                    // KOLL FÖR SPECIFIKA LJUD VID UPPHÄMTNING
+                    if (currentLevel === 2 && c.typeIdx === 0) {
+                        playSound(chokladSound); // Spelar "Choklad" för marshmallow/candy1
+                    } else if(itemsCollected % 12 === 0) {
+                        playSound(braJobbatSound);
+                    }
+                    
                     if(itemsCollected === 30 && currentLevel === 1) {
                         triggerLevel2Transition();
                     }
-                    if(itemsCollected % 12 === 0) playSound(braJobbatSound);
                     collectables.splice(i,1);
                 }
             }
         }
-        
-        // Rita väg (osynlig men ger rätt "fötter i marken"-känsla)
-        ctx.fillStyle = "transparent"; ctx.fillRect(0, groundY, w, h - groundY);
         
         collectables.forEach(c => {
             let imgSet = currentLevel === 1 ? assets.items.lvl1 : assets.items.lvl2;
