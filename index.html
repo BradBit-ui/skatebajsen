@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: THE FINAL STABLE</title>
+    <title>Skate-bajsen: CANDY1 PRECISION</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -105,7 +105,9 @@
     assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png'; assets.fire.src = 'fire_sprite.png'; assets.gold.src = 'gold_poop.png';
     for(let i=1; i<=6; i++) { let img = new Image(); img.src = i===1?'pixel_background.png':`pixel_background${i}.png`; assets.bg.push(img); }
     function loadLvl(l, i1, i2, i3) { assets.items['lvl'+l] = [new Image(), new Image(), new Image()]; assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3; }
-    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png'); loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png'); loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png'); loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png'); loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
+    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png'); 
+    loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png'); // candy1.png laddas här
+    loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png'); loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png'); loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
 
     let collectables = [], spawnTimer = 0, particles = [];
 
@@ -129,11 +131,11 @@
             if(assets.boss.complete) ctx.drawImage(assets.boss, bX, bY, playerSize*1.8, playerSize*1.8); ctx.restore();
             if(projectile) {
                 projectile.x += 15; ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
-                if(projectile.x > bX && projectile.x < bX+playerSize*1.6) {
+                if(projectile.x > bX && projectile.x < bX+playerSize*1.6 && projectile.y > bY && projectile.y < bY+playerSize*1.8) {
                     bossHealth -= 15; bossHitTimer = 20; 
                     let s = sounds.bossOuch[Math.floor(Math.random()*3)]; s.currentTime=0; s.play();
                     projectile = null;
-                }
+                } else if(projectile.x > w) projectile = null;
             }
             if(bossHealth <= 0) { gameActive = false; stopAllAudio(); setTimeout(()=>winAudio.play(), 100); document.getElementById("win-screen").style.display="flex"; }
             spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bX, y: bY+100, isPaper: true, vx: -12, sW: 60, sH: 60, soundDone: false}); spawnTimer = 0; }
@@ -161,22 +163,24 @@
         for(let i = collectables.length - 1; i >= 0; i--) {
             let c = collectables[i]; c.x += (currentLevel === 6 ? c.vx : -(boostTimer > 0 ? bgSpeed * 2.5 : bgSpeed));
             if(!transitioning && player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                // CHOCO FIX: Kolla soundDone flaggan och flytta objektet direkt
-                if(currentLevel === 2 && !c.isG && !c.isPaper && !c.soundDone) { 
+                
+                // PRECISIONS-FIX FÖR CANDY1.PNG
+                if(currentLevel === 2 && c.img && c.img.src.endsWith('candy1.png') && !c.soundDone) { 
                     c.soundDone = true; 
                     sounds.choklad.currentTime = 0; 
                     sounds.choklad.play(); 
-                    c.x = -2000; // Flytta bort objektet omedelbart
+                    c.x = -2000; // Flytta bort omedelbart
                 }
+                
                 if(c.isG) { sounds.yeah.play(); for(let g=0; g<40; g++) particles.push({x: player.x, y: player.y, vx: Math.random()*25-12.5, vy: Math.random()*25-12.5, s: Math.random()*8, c: '#f1c40f', l: 1 }); }
-                else if(c.isPaper) { hasPaperAmmo++; playSound(sounds.jump); }
+                else if(c.isPaper) { hasPaperAmmo++; sounds.jump.currentTime=0; sounds.jump.play(); }
                 else {
                     if(c.isB) triggerWow(player.x, player.y-100);
                     itemsCollected++;
-                    if(itemsCollected % 12 === 0) sounds.braJobbat.play();
-                    if(currentLevel === 5 && c.typeIdx === 0) sounds.mjau.play();
+                    if(itemsCollected % 12 === 0) { sounds.braJobbat.currentTime=0; sounds.braJobbat.play(); }
+                    if(currentLevel === 5 && c.typeIdx === 0) { sounds.mjau.currentTime=0; sounds.mjau.play(); }
                     if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1) || (currentLevel === 5 && (c.typeIdx === 0 || c.typeIdx === 2))) boostTimer = 120;
-                    if(itemsCollected % 25 === 0) { sounds.mega.play(); setTimeout(() => { for(let j=0; j<80; j++) particles.push({x: player.x, y: player.y, vx: Math.random()*40-20, vy: Math.random()*-30, s: Math.random()*15, c: '#8B4513', l: 2}); }, 3500); }
+                    if(itemsCollected % 25 === 0) { sounds.mega.currentTime=0; sounds.mega.play(); setTimeout(() => { for(let j=0; j<80; j++) particles.push({x: player.x, y: player.y, vx: Math.random()*40-20, vy: Math.random()*-30, s: Math.random()*15, c: '#8B4513', l: 2}); }, 3500); }
                     if(itemsCollected >= levelGoals[currentLevel-1]) { transitioning = true; sounds.next.play(); setTimeout(()=>document.getElementById("level-menu").style.display="flex", 1500); }
                 }
                 collectables.splice(i, 1);
@@ -197,7 +201,7 @@
     function resize() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; groundY = h*0.75; playerSize = h*0.25; itemSizeBase = playerSize*0.65; player.x = w*0.22; player.y = groundY-playerSize; }
     function checkOrientation() { if (window.innerHeight > window.innerWidth) document.getElementById('orientation-overlay').style.display = 'flex'; else { document.getElementById('orientation-overlay').style.display = 'none'; resize(); } }
     window.addEventListener('resize', checkOrientation);
-    window.addEventListener("keydown", (e) => { if(e.code === "Space" && gameActive) { e.preventDefault(); if(!player.isJumping) { player.velocityY = player.jumpPower; player.isJumping = true; playSound(sounds.fart[Math.floor(Math.random()*3)]); } else if(currentLevel===6 && hasPaperAmmo>0) { hasPaperAmmo--; projectile={x:player.x, y:player.y}; playerRotation+=360; } } });
+    window.addEventListener("keydown", (e) => { if(e.code === "Space" && gameActive) { e.preventDefault(); if(!player.isJumping) { player.velocityY = player.jumpPower; player.isJumping = true; sounds.fart[Math.floor(Math.random()*3)].play(); } else if(currentLevel===6 && hasPaperAmmo>0) { hasPaperAmmo--; projectile={x:player.x, y:player.y}; playerRotation+=360; } } });
     function playSound(s) { if(!gameActive) return; s.currentTime = 0; s.volume = 1.0; s.play().catch(()=>{}); }
     checkOrientation(); gameLoop();
 </script>
