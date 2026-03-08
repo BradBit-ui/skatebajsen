@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen: Superprutt Edition</title>
+    <title>Skate-bajsen: Yeah Edition</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
@@ -85,9 +85,9 @@
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
     const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const nextLevelSound = new Audio('nextlevel.mp3'), buttonSound = new Audio('button.mp3'), chokladSound = new Audio('choklad.m4a'), neighSound = new Audio('neigh.m4a');
-    
-    // NYTT LJUD: SUPERPRUTT!
     const superpruttSound = new Audio('superprutt.m4a');
+    // NYTT LJUD: YEAH!
+    const yeahSound = new Audio('yeah.m4a');
 
     let audioCtx, gainNode, gameMusic, currentMusicFile = 'music.mp3';
     let collectables = [], particles = [], spawnTimer = 0;
@@ -146,8 +146,7 @@
 
     function jump() {
         if(gameActive && !player.isJumping) {
-            player.velocityY = player.jumpPower; 
-            player.isJumping = true; 
+            player.velocityY = player.jumpPower; player.isJumping = true; 
             playSound(fartSounds[Math.floor(Math.random()*3)]);
         }
     }
@@ -190,10 +189,9 @@
                     if(c.isGold) {
                         gameStartTime += 5000;
                         for(let b=0; b<30; b++) particles.push({ x: c.x, y: c.y, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, s: 8, c: '#f1c40f', l: 1 });
-                        playSound(wowSound);
+                        playSound(yeahSound); // TRIGGER YEAH!
                     } else {
                         itemsCollected++;
-                        // BOOST & SUPERPRUTT!
                         if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1)) {
                             boostTimer = 120;
                             playSound(superpruttSound);
@@ -210,8 +208,8 @@
                     if(itemsCollected === goal) {
                         if(currentLevel === 4) {
                             gameActive = false;
-                            if(currentSeconds < bestTime) { localStorage.setItem("skateBajsBestTime", currentSeconds); alert("LETS GO! NYTT REKORD: " + currentSeconds + " sek!"); }
-                            else { alert("LETS GO! Tid: " + currentSeconds + " sek"); }
+                            if(currentSeconds < bestTime) { localStorage.setItem("skateBajsBestTime", currentSeconds); alert("YEAH! NYTT REKORD: " + currentSeconds + " sek!"); }
+                            else { alert("Bra kört! Tid: " + currentSeconds + " sek"); }
                             location.reload();
                         } else triggerTransition();
                     }
@@ -223,21 +221,17 @@
         
         collectables.forEach(c => {
             ctx.save();
-            if(c.isGold) { ctx.shadowBlur = 20; ctx.shadowColor = "gold"; }
+            if(c.isGold) { ctx.shadowBlur = 25; ctx.shadowColor = "gold"; }
             else if(currentLevel === 3) { ctx.shadowBlur = 15; ctx.shadowColor = "white"; }
             let img = c.isGold ? assets.gold : assets.items['lvl'+currentLevel][c.typeIdx];
             ctx.drawImage(img, c.x, c.y, c.sW, c.sH);
             ctx.restore();
         });
 
-        // RITA ELD & SPELARE
         ctx.save();
         if (boostTimer > 0) {
-            let fireW = playerSize * 0.9;
-            let fireH = fireW;
-            if (assets.fire.complete && assets.fire.naturalWidth > 0) {
-                fireH = fireW * (assets.fire.naturalHeight / assets.fire.naturalWidth);
-            }
+            let fireW = playerSize * 0.95;
+            let fireH = fireW * (assets.fire.naturalHeight / assets.fire.naturalWidth || 1);
             ctx.drawImage(assets.fire, player.x - fireW * 1.05, player.y + playerSize * 0.45 - fireH / 2, fireW, fireH);
         }
         ctx.drawImage(assets.player, player.x, player.y, playerSize, playerSize);
