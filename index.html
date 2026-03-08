@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: FINAL REPAIR</title>
+    <title>Skate-bajsen: JUMP & VOLUME FIXED</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
-        #game-wrapper { position: relative; width: 100vw; height: 100vh; }
-        /* touch-action: none är kritisk för att hoppet ska fungera på mobil/padda */
+        #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
         canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; touch-action: none; }
         #start-menu, #level-menu, #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
         .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 20px; pointer-events: auto; }
@@ -96,7 +95,18 @@
     let gameMusic = new Audio(); gameMusic.loop = true;
     let currentMusicFile = 'music.mp3';
 
-    function playSound(s) { s.currentTime = 0; s.volume = volumeSlider.value; s.play().catch(()=>{}); }
+    // LJUD-FUNKTION MED AKTUELL VOLYM
+    function playSound(s) { 
+        s.currentTime = 0; 
+        s.volume = parseFloat(volumeSlider.value); 
+        s.play().catch(()=>{}); 
+    }
+
+    // UPPDATERA VOLYM I REALTID
+    volumeSlider.addEventListener('input', () => {
+        const val = parseFloat(volumeSlider.value);
+        if(gameMusic) gameMusic.volume = val;
+    });
 
     function triggerWow(x, y) {
         const wow = document.createElement('div');
@@ -120,7 +130,8 @@
         groundY = (currentLevel === 1) ? h * 0.75 : h * 0.82;
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.75;
         if(!transitioning) {
-            if(currentLevel < 6) { player.x = w * 0.22; player.y = groundY - playerSize; }
+            player.x = w * 0.22; 
+            player.y = groundY - playerSize;
         }
     }
 
@@ -135,7 +146,7 @@
         }
     }
 
-    // --- REAKTION PÅ INPUT ---
+    // GLOBAL LYSSNARE FÖR ATT GARANTERA HOPP
     window.addEventListener("mousedown", (e) => { 
         if(gameActive && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') jumpAction(); 
     });
@@ -151,7 +162,7 @@
         document.getElementById("level-menu").style.display = "none";
         triggerWow();
         gameMusic.src = currentMusicFile; 
-        gameMusic.volume = volumeSlider.value; // Startar på 0.1 enligt sliderns värde
+        gameMusic.volume = parseFloat(volumeSlider.value);
         gameMusic.play(); 
     }
 
