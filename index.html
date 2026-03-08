@@ -4,20 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen</title>
+    <title>Skate-bajsen - Level 2: Godislandet</title>
     <style>
         body { margin: 0; padding: 0; background-color: #ffb6c1; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
+        
         #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .phone-icon { font-size: 80px; animation: rotateAnim 2s infinite ease-in-out; }
         @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+
         #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 50; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
         .slider-label { color: white; font-size: 11px; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; }
         #volume-slider { cursor: pointer; width: 120px; accent-color: #f1c40f; }
-        #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; }
-        #start-btn-menu { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; font-weight: bold; }
+        
+        #start-menu, #level-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
+        .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        #go-btn { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         h1 { font-size: 8vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin-bottom: 10px; }
+        #level-menu { display: none; background: rgba(255, 182, 193, 0.95); } /* Rosa ton för godislandet */
     </style>
 </head>
 <body>
@@ -25,15 +31,30 @@
 <div id="game-wrapper">
     <div id="rotate-message"><div class="phone-icon">📱🔄</div><h2>Vänd telefonen!</h2></div>
     <canvas id="gameCanvas"></canvas>
-    <div id="start-menu"><h1>SKATE-BAJSEN</h1><button id="start-btn-menu">STARTA!</button></div>
-    <div id="ui-layer"><div class="slider-label" id="device-info">🎵 Musik</div><input type="range" id="volume-slider" min="0" max="0.5" step="0.01" value="0.1"></div>
+    
+    <div id="start-menu">
+        <h1>SKATE-BAJSEN</h1>
+        <button id="start-btn-menu" class="game-btn-large">STARTA!</button>
+    </div>
+
+    <div id="level-menu">
+        <h1 id="level-title">LEVEL 2</h1>
+        <p>Grymt jobbat! Välkommen till Godislandet!</p>
+        <button id="go-btn" class="game-btn-large">GO!</button>
+    </div>
+
+    <div id="ui-layer">
+        <div class="slider-label" id="device-info">🎵 Musik</div>
+        <input type="range" id="volume-slider" min="0" max="0.5" step="0.01" value="0.1">
+    </div>
 </div>
 
 <script>
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-    const startMenu = document.getElementById("start-menu"), volumeSlider = document.getElementById("volume-slider"), rotateMessage = document.getElementById("rotate-message");
+    const startMenu = document.getElementById("start-menu"), levelMenu = document.getElementById("level-menu");
+    const volumeSlider = document.getElementById("volume-slider"), rotateMessage = document.getElementById("rotate-message");
 
-    let gameActive = false, itemsCollected = 0, totalItemsSpawned = 0, level = 1, bgScroll = 0;
+    let gameActive = false, transitioning = false, itemsCollected = 0, totalItemsSpawned = 0, currentLevel = 1, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed = 6, bgScale;
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -41,27 +62,43 @@
     volumeSlider.value = volSettings.start;
     document.getElementById("device-info").innerText = `🎵 Musik (${isMobile ? 'MOBIL' : 'DESKTOP'})`;
 
+    // LJUD & BILDER
     let audioCtx, gainNode, gameMusic;
+    const assets = {
+        bg1: new Image(), bg2: new Image(),
+        player: new Image(),
+        items: {
+            lvl1: [new Image(), new Image(), new Image()],
+            lvl2: [new Image(), new Image(), new Image()] // Nya bilder för Level 2
+        }
+    };
+    assets.bg1.src = 'pixel_background.png'; 
+    assets.bg2.src = 'pixel_background2.png'; // Din nya Godis-bakgrund
+    assets.player.src = 'bajskorv_sprite.png';
+    // Level 1 objekt
+    assets.items.lvl1[0].src = 'unicorn_sprite.png'; assets.items.lvl1[1].src = 'star_sprite.png'; assets.items.lvl1[2].src = 'heart_sprite.png';
+    // Level 2 objekt - Ladda upp candy1.png, candy2.png, candy3.png
+    assets.items.lvl2[0].src = 'candy1.png'; assets.items.lvl2[1].src = 'candy2.png'; assets.items.lvl2[2].src = 'candy3.png';
+
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
-    const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), neighSound = new Audio('neigh.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
+    const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
+    const nextLevelSound = new Audio('nextlevel.mp3'), buttonSound = new Audio('button.mp3');
 
-    const backgroundImage = new Image(); backgroundImage.src = 'pixel_background.png'; 
-    const playerImage = new Image(); playerImage.src = 'bajskorv_sprite.png';
-    const itemImages = { unicorn: new Image(), star: new Image(), heart: new Image() };
-    itemImages.unicorn.src = 'unicorn_sprite.png'; itemImages.star.src = 'star_sprite.png'; itemImages.heart.src = 'heart_sprite.png';
+    let currentMusicFile = 'music.mp3';
+    let confetti = [];
 
-    function initAudioOnce() {
+    function initAudio() {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             gainNode = audioCtx.createGain();
             gainNode.connect(audioCtx.destination);
-            gainNode.gain.value = volumeSlider.value;
-            gameMusic = new Audio('music.mp3');
+            gameMusic = new Audio(currentMusicFile);
             gameMusic.loop = true;
             gameMusic.crossOrigin = "anonymous";
             const source = audioCtx.createMediaElementSource(gameMusic);
             source.connect(gainNode);
         }
+        gainNode.gain.value = volumeSlider.value;
     }
 
     volumeSlider.addEventListener("input", (e) => {
@@ -74,46 +111,81 @@
         rotateMessage.style.display = (isMobile && h > w) ? "flex" : "none";
         groundY = h * 0.75; playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
         bgScale = groundY / (h * 0.65);
-        player.x = w * 0.22; player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
+        if(!transitioning) player.x = w * 0.22;
+        player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
     }
 
-    function playSoundEffect(sound) { 
-        sound.volume = 1.0; sound.currentTime = 0; 
-        sound.play().catch(() => {});
-    }
+    function playSound(s) { s.volume = 1; s.currentTime = 0; s.play().catch(()=>{}); }
 
     function startGame() {
-        initAudioOnce();
+        initAudio();
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        gameActive = true;
+        gameActive = true; transitioning = false;
         startMenu.style.display = "none";
+        levelMenu.style.display = "none";
         player.y = groundY - playerSize;
-        playSoundEffect(wowSound);
-        gameMusic.play().catch(() => {});
-        if (isMobile) {
-            gainNode.gain.setTargetAtTime(volSettings.game, audioCtx.currentTime, 1.5);
-            let fadeIv = setInterval(() => {
-                let cur = parseFloat(volumeSlider.value);
-                if (cur > volSettings.game) volumeSlider.value = (cur - 0.01).toFixed(3);
-                else clearInterval(fadeIv);
-            }, 100);
+        player.x = w * 0.22;
+        playSound(wowSound);
+        gameMusic.play();
+        if (isMobile) fadeVolume(volSettings.game);
+    }
+
+    function startLevel2() {
+        playSound(buttonSound);
+        setTimeout(startGame, 100);
+    }
+
+    function fadeVolume(target) {
+        if(!gainNode) return;
+        gainNode.gain.setTargetAtTime(target, audioCtx.currentTime, 1.5);
+    }
+
+    function triggerLevel2Transition() {
+        gameActive = false;
+        transitioning = true;
+        gameMusic.pause();
+        playSound(nextLevelSound);
+        
+        const exitAnim = setInterval(() => {
+            player.x += 15;
+            if (player.x > w + 200) {
+                clearInterval(exitAnim);
+                showLevel2Menu();
+            }
+        }, 20);
+    }
+
+    function createConfetti() {
+        confetti = [];
+        for (let i = 0; i < 100; i++) {
+            confetti.push({
+                x: Math.random() * w,
+                y: -Math.random() * h,
+                size: Math.random() * 8 + 4,
+                color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+                velocity: Math.random() * 3 + 2,
+                angle: Math.random() * 6.28
+            });
         }
     }
+
+    function showLevel2Menu() {
+        levelMenu.style.display = "flex";
+        currentMusicFile = 'music2.mp3'; // Byt till ny musik
+        if(gameMusic) gameMusic.src = currentMusicFile;
+        createConfetti();
+    }
+
+    document.getElementById("start-btn-menu").addEventListener("click", startGame);
+    document.getElementById("go-btn").addEventListener("click", startLevel2);
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
     let collectables = [], particles = [], spawnTimer = 0;
 
-    document.getElementById("start-btn-menu").addEventListener("click", (e) => { 
-        e.preventDefault(); e.stopPropagation(); startGame(); 
-    });
-
     function handleJump() {
-        if (!gameActive) return;
-        if (!player.isJumping) {
+        if (gameActive && !player.isJumping) {
             player.velocityY = player.jumpPower; player.isJumping = true;
-            if (megaBajsSound.paused || megaBajsSound.currentTime === 0) {
-                playSoundEffect(fartSounds[Math.floor(Math.random() * fartSounds.length)]);
-            }
+            playSound(fartSounds[Math.floor(Math.random()*3)]);
         }
     }
 
@@ -121,13 +193,14 @@
     window.addEventListener("touchstart", (e) => { 
         if(e.target.id !== 'volume-slider' && e.target.tagName !== 'BUTTON') { 
             if (gameActive) { e.preventDefault(); handleJump(); }
-        } 
+        }
     }, {passive: false});
 
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
-        ctx.drawImage(backgroundImage, bgScroll, -h*0.1, w * bgScale, h * bgScale);
-        ctx.drawImage(backgroundImage, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
+        let currentBG = currentLevel === 1 ? assets.bg1 : assets.bg2;
+        ctx.drawImage(currentBG, bgScroll, -h*0.1, w * bgScale, h * bgScale);
+        ctx.drawImage(currentBG, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
         
         if (gameActive) {
             bgScroll -= bgSpeed; if(bgScroll <= -w * bgScale) bgScroll = 0;
@@ -137,51 +210,53 @@
             spawnTimer++;
             if(spawnTimer > 60) {
                 totalItemsSpawned++;
-                let type = ['unicorn', 'star', 'heart'][Math.floor(Math.random()*3)];
+                let typeIdx = Math.floor(Math.random()*3);
                 let isBoss = (totalItemsSpawned % 7 === 0);
                 let s = isBoss ? itemSize * 1.6 : itemSize;
-                collectables.push({ x: w, y: groundY - s - Math.random()*(h*0.35), size: s, type, isBoss: isBoss });
+                collectables.push({ x: w, y: groundY - s - Math.random()*(h*0.35), size: s, typeIdx, isBoss });
                 spawnTimer = 0;
             }
             for(let i = collectables.length-1; i>=0; i--) {
                 let c = collectables[i]; c.x -= bgSpeed;
                 if(c.x + c.size < 0) { collectables.splice(i, 1); continue; }
-                let pPad = playerSize * 0.15;
-                if(player.x + pPad < c.x + c.size && player.x + playerSize - pPad > c.x && player.y < c.y + c.size && player.y + playerSize > c.y) {
+                if(player.x < c.x + c.size && player.x + playerSize > c.x && player.y < c.y + c.size && player.y + playerSize > c.y) {
                     itemsCollected++;
-                    // KOLLEKTIONS-LJUD
-                    if(itemsCollected % 25 === 0) {
-                        playSoundEffect(megaBajsSound);
-                        setTimeout(() => { if (gameActive) { playSoundEffect(fartSounds[0]); for(let b=0; b<60; b++) particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: (Math.random()-0.3)*15, vy: (Math.random()-0.8)*20, s: Math.random()*8+4, c: '#8B4513', l: 1.5 }); } }, 3000);
-                    } else if (megaBajsSound.paused || megaBajsSound.currentTime === 0) {
-                        // NY LOGIK FÖR RÖSTERNA:
-                        if(c.isBoss) playSoundEffect(wowSound);
-                        else if(itemsCollected % 12 === 0) playSoundEffect(braJobbatSound);
-                        else if(c.type === 'unicorn') playSoundEffect(neighSound);
+                    if(itemsCollected === 30 && currentLevel === 1) {
+                        currentLevel = 2;
+                        triggerLevel2Transition();
                     }
+                    if(itemsCollected % 12 === 0) playSound(braJobbatSound);
                     collectables.splice(i,1);
-                    if(itemsCollected % 5 === 0) level++;
                 }
             }
         }
-        
         ctx.fillStyle = "#333"; ctx.fillRect(0, groundY, w, h - groundY);
-        collectables.forEach(c => ctx.drawImage(itemImages[c.type], c.x, c.y, c.size, c.size));
-        ctx.drawImage(playerImage, player.x, player.y, playerSize, playerSize);
-        particles.forEach((p, i) => {
-            p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.02;
-            ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
-            if(p.l <= 0) particles.splice(i,1);
+        collectables.forEach(c => {
+            // Välj rätt bildset baserat på level
+            let imgSet = currentLevel === 1 ? assets.items.lvl1 : assets.items.lvl2;
+            ctx.drawImage(imgSet[c.typeIdx], c.x, c.y, c.size, c.size);
         });
-        ctx.globalAlpha = 1;
+        ctx.drawImage(assets.player, player.x, player.y, playerSize, playerSize);
+
+        // Rita konfetti om menyn är synlig
+        if (levelMenu.style.display === "flex") {
+            confetti.forEach((p, i) => {
+                p.y += p.velocity;
+                p.x += Math.sin(p.angle) * 2;
+                p.angle += 0.05;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                if (p.y > h) p.y = -20;
+            });
+        }
+
         if (gameActive) {
             ctx.fillStyle = "white"; ctx.font = "bold 22px Courier";
-            ctx.fillText("✨ " + itemsCollected, 30, 50);
+            ctx.fillText("✨ " + itemsCollected + " / 30", 30, 50);
+            ctx.fillText("LEVEL " + currentLevel, 30, 80);
         }
         requestAnimationFrame(gameLoop);
     }
-    
     window.addEventListener('resize', resize);
     resize();
     gameLoop();
