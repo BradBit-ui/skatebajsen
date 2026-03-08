@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: BOSS CHALLENGE</title>
+    <title>Skate-bajsen: BOSS SOUND EDITION</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
         canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; touch-action: none; outline: none; }
-        #start-menu, #level-menu, #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
+        #start-menu, #level-menu, #win-screen, #level-intro { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
+        #level-intro { z-index: 200; background: #3498db; }
         .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 20px; pointer-events: auto; }
-        .level-selector { display: flex; gap: 10px; margin: 15px 0; }
         .lvl-btn { width: 45px; height: 45px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 18px; }
         .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 15px #f1c40f; }
         #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; pointer-events: auto; }
@@ -26,10 +26,14 @@
     <div id="wow-container"></div>
     <div id="boss-instr" style="display:none;">FÅNGA RULLEN - HOPPA FÖR ATT SKJUTA!</div>
     
+    <div id="level-intro" style="display:none;">
+        <h1 id="level-intro-text" style="font-size: 80px;">LEVEL 1</h1>
+    </div>
+
     <div id="start-menu">
         <img src="bajskorv_sprite.png" style="height: 30vh; margin-bottom: 15px;">
         <h1>SKATE-BAJSEN</h1>
-        <div class="level-selector">
+        <div style="display: flex; gap: 10px; margin: 15px 0;">
             <div class="lvl-btn active" onclick="selectLevel(1)">1</div>
             <div class="lvl-btn" onclick="selectLevel(2)">2</div>
             <div class="lvl-btn" onclick="selectLevel(3)">3</div>
@@ -93,19 +97,15 @@
         wow: new Audio('wow.m4a'), mjau: new Audio('mjau.m4a'), button: new Audio('button.mp3'),
         hit: new Audio('hit.mp3'), win: new Audio('win.mp3'), jump: new Audio('superprutt.m4a'),
         yeah: new Audio('yeah.m4a'), mega: new Audio('baaaajs.m4a'), next: new Audio('nextlevel.mp3'),
-        braJobbat: new Audio('brajobbat.m4a')
+        braJobbat: new Audio('brajobbat.m4a'),
+        bossOuch: [new Audio('ouch.m4a'), new Audio('Aj.m4a')] // Nya boss-ljud
     };
 
     let gameMusic = new Audio(); gameMusic.loop = true;
     let currentMusicFile = 'music.mp3';
 
-    function playSound(s, isMusic = false) { 
-        s.currentTime = 0; s.volume = 1.0; s.play().catch(()=>{}); 
-    }
-
-    volumeSlider.addEventListener('input', () => {
-        if(gameMusic) gameMusic.volume = parseFloat(volumeSlider.value);
-    });
+    function playSound(s) { s.currentTime = 0; s.volume = 1.0; s.play().catch(()=>{}); }
+    volumeSlider.addEventListener('input', () => { if(gameMusic) gameMusic.volume = parseFloat(volumeSlider.value); });
 
     function triggerWow(x, y, playAudio = true) {
         const wow = document.createElement('div');
@@ -149,16 +149,24 @@
     window.addEventListener("touchstart", (e) => { if(gameActive && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') { e.preventDefault(); jumpAction(); } }, {passive: false});
 
     window.startGame = function() {
-        resize(); gameActive = true; transitioning = false;
+        const introColors = ["#3498db", "#e91e63", "#2ecc71", "#9b59b6", "#e67e22", "#c0392b"];
+        const intro = document.getElementById("level-intro");
+        const introText = document.getElementById("level-intro-text");
         document.getElementById("start-menu").style.display = "none";
         document.getElementById("level-menu").style.display = "none";
-        document.getElementById("boss-instr").style.display = currentLevel === 6 ? "block" : "none";
-        if(currentLevel === 6) setTimeout(() => document.getElementById("boss-instr").style.display = "none", 4000);
-        
-        triggerWow();
-        gameMusic.src = currentMusicFile; 
-        gameMusic.volume = parseFloat(volumeSlider.value);
-        gameMusic.play(); 
+        intro.style.display = "flex";
+        intro.style.backgroundColor = introColors[currentLevel-1];
+        introText.innerText = currentLevel === 6 ? "BOSS FIGHT!" : `LEVEL ${currentLevel}`;
+        setTimeout(() => {
+            intro.style.display = "none";
+            resize(); gameActive = true; transitioning = false;
+            document.getElementById("boss-instr").style.display = currentLevel === 6 ? "block" : "none";
+            if(currentLevel === 6) setTimeout(() => document.getElementById("boss-instr").style.display = "none", 4000);
+            triggerWow();
+            gameMusic.src = currentMusicFile; 
+            gameMusic.volume = parseFloat(volumeSlider.value);
+            gameMusic.play();
+        }, 1500);
     }
 
     window.nextLevelBtn = function() { currentLevel++; itemsCollected = 0; startGame(); };
@@ -179,8 +187,6 @@
             if(bg && bg.complete) ctx.drawImage(bg, 0, 0, w, h);
             
             let bossX = w * 0.75, bossY = h * 0.2 + Math.sin(Date.now()*0.003)*40;
-            
-            // HP-MÄTARE BOX
             ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(bossX - 10, bossY - 40, (playerSize*1.8) + 20, 20);
             ctx.fillStyle = "red"; ctx.fillRect(bossX, bossY-35, playerSize*1.8, 10);
             ctx.fillStyle = "#2ecc71"; ctx.fillRect(bossX, bossY-35, (playerSize*1.8)*(bossHealth/maxBossHealth), 10);
@@ -194,11 +200,19 @@
                 projectile.x += projectile.vx;
                 ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
                 if(projectile.x > bossX && projectile.x < bossX + playerSize*1.6 && projectile.y > bossY && projectile.y < bossY + playerSize*1.8) {
-                    bossHealth -= 15; bossHitTimer = 20; playSound(sounds.hit); projectile = null;
+                    bossHealth -= 15; bossHitTimer = 20; 
+                    playSound(sounds.hit);
+                    // Slumpa mellan de nya boss-ljuden
+                    playSound(sounds.bossOuch[Math.floor(Math.random()*sounds.bossOuch.length)]);
+                    projectile = null;
                 } else if(projectile.x > w) projectile = null;
             }
 
-            if(bossHealth <= 0) { gameActive = false; gameMusic.pause(); document.getElementById("win-screen").style.display="flex"; playSound(sounds.win); }
+            if(bossHealth <= 0) { 
+                gameActive = false; gameMusic.pause(); gameMusic.currentTime = 0;
+                document.getElementById("win-screen").style.display="flex"; 
+                playSound(sounds.win); 
+            }
             spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bossX, y: bossY+100, isPaper: true, vx: -12, sW: 60, sH: 60}); spawnTimer = 0; }
         } else {
             let speed = boostTimer > 0 ? bgSpeed * 2 : bgSpeed;
