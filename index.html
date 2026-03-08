@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen: Fixed Party Edition</title>
+    <title>Skate-bajsen: Party Timing Edition</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
@@ -67,20 +67,22 @@
     document.getElementById("best-time-display").innerText = bestTime === Infinity ? "-- sek" : bestTime + " sek";
 
     const assets = {
-        bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), player: new Image(), gold: new Image(), fire: new Image(),
+        bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), bg5: new Image(), player: new Image(), gold: new Image(), fire: new Image(),
         items: {
             lvl1: [new Image(), new Image(), new Image()],
             lvl2: [new Image(), new Image(), new Image()],
             lvl3: [new Image(), new Image(), new Image()],
-            lvl4: [new Image(), new Image(), new Image()]
+            lvl4: [new Image(), new Image(), new Image()],
+            lvl5: [new Image(), new Image(), new Image()]
         }
     };
-    assets.bg1.src = 'pixel_background.png'; assets.bg2.src = 'pixel_background2.png'; assets.bg3.src = 'pixel_background3.png'; assets.bg4.src = 'pixel_background4.png';
+    assets.bg1.src = 'pixel_background.png'; assets.bg2.src = 'pixel_background2.png'; assets.bg3.src = 'pixel_background3.png'; assets.bg4.src = 'pixel_background4.png'; assets.bg5.src = 'pixel_background5.png';
     assets.player.src = 'bajskorv_sprite.png'; assets.gold.src = 'gold_poop.png'; assets.fire.src = 'fire_sprite.png';
     assets.items.lvl1[0].src = 'unicorn_sprite.png'; assets.items.lvl1[1].src = 'star_sprite.png'; assets.items.lvl1[2].src = 'heart_sprite.png';
     assets.items.lvl2[0].src = 'candy1.png'; assets.items.lvl2[1].src = 'candy2.png'; assets.items.lvl2[2].src = 'candy3.png';
     assets.items.lvl3[0].src = 'zebra_sprite.png'; assets.items.lvl3[1].src = 'giraffe_sprite.png'; assets.items.lvl3[2].src = 'monkey_sprite.png';
     assets.items.lvl4[0].src = 'planet_sprite.png'; assets.items.lvl4[1].src = 'alien_sprite.png'; assets.items.lvl4[2].src = 'unicorn_sprite.png';
+    assets.items.lvl5[0].src = 'kitten_sprite.png'; assets.items.lvl5[1].src = 'yarnball_sprite.png'; assets.items.lvl5[2].src = 'rainbowheart_sprite.png';
 
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
     const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
@@ -106,9 +108,9 @@
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
         rotateMessage.style.display = (h > w && /Android|iPhone/i.test(navigator.userAgent)) ? "flex" : "none";
-        const colors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16"];
+        const colors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16", "#ffe0f0"];
         canvas.style.backgroundColor = colors[currentLevel-1];
-        groundY = (currentLevel === 1) ? h * 0.75 : (currentLevel === 2) ? h * 0.85 : (currentLevel === 3) ? h * 0.82 : h * 0.80;
+        groundY = (currentLevel === 1) ? h * 0.75 : (currentLevel === 2) ? h * 0.85 : (currentLevel === 3) ? h * 0.82 : (currentLevel === 4) ? h * 0.80 : h * 0.82;
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.75;
         bgScale = groundY / (h * 0.65);
         if(!transitioning) { player.x = w * 0.22; player.y = groundY - playerSize; }
@@ -116,8 +118,7 @@
     }
 
     function startGame() {
-        initAudio(); 
-        if(currentLevel === 1) { gameStartTime = Date.now(); itemsCollected = 0; }
+        initAudio(); if(currentLevel === 1) { gameStartTime = Date.now(); itemsCollected = 0; }
         gameActive = true; transitioning = false;
         startMenu.style.display = "none"; levelMenu.style.display = "none";
         resize(); playSound(wowSound); gameMusic.play();
@@ -131,9 +132,10 @@
     function showMenu() {
         levelMenu.style.display = "flex";
         let next = currentLevel + 1; document.getElementById("level-title").innerText = `LEVEL ${next}`;
-        if(next === 2) { currentMusicFile='music2.mp3'; levelMenu.style.background="rgba(255,182,193,0.9)"; }
-        else if(next === 3) { currentMusicFile='music3.mp3'; levelMenu.style.background="rgba(100,200,100,0.9)"; }
-        else if(next === 4) { currentMusicFile='music4.mp3'; levelMenu.style.background="rgba(44,62,80,0.9)"; }
+        if(next === 2) { currentMusicFile='music2.mp3'; levelMenu.style.background="rgba(255,182,193,0.9)"; levelMenu.querySelector("#level-desc").innerText="Välkommen till Godislandet!"; }
+        else if(next === 3) { currentMusicFile='music3.mp3'; levelMenu.style.background="rgba(100,200,100,0.9)"; levelMenu.querySelector("#level-desc").innerText="Nu drar vi till Djurparken!"; }
+        else if(next === 4) { currentMusicFile='music4.mp3'; levelMenu.style.background="rgba(44,62,80,0.9)"; levelMenu.querySelector("#level-desc").innerText="Redo för Rymden?"; }
+        else if(next === 5) { currentMusicFile='music5.mp3'; levelMenu.style.background="rgba(255,200,240,0.9)"; levelMenu.querySelector("#level-desc").innerText="Välkommen till Regnbågslandet!"; }
         gameMusic.src = currentMusicFile;
     }
 
@@ -190,39 +192,42 @@
                         playSound(yeahSound);
                     } else {
                         itemsCollected++;
-                        if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1)) {
-                            boostTimer = 120;
-                            playSound(superpruttSound);
+                        if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1) || (currentLevel === 5 && c.typeIdx === 0)) {
+                            boostTimer = 120; playSound(superpruttSound);
                         }
                         if(currentLevel === 2 && c.typeIdx === 0) playSound(chokladSound);
                         if(currentLevel === 4 && c.typeIdx === 2) playSound(neighSound);
                         if(itemsCollected % 12 === 0) playSound(braJobbatSound);
                         
-                        // FIXAD BAJSFEST-LOGIK
+                        // FIXAD BAJSFEST-TIMING
                         if(itemsCollected > 0 && itemsCollected % 25 === 0) {
+                             // 1. Spela ljudet DIREKT vid fångst
+                             playSound(megaBajsSound);
+                             
+                             // 2. Fördröj själva explosionen med 3,5 sekunder
                              setTimeout(() => { 
                                  if (gameActive) { 
-                                     playSound(megaBajsSound);
-                                     for(let b=0; b<100; b++) {
+                                     // Massor av flygande bajs!
+                                     for(let b=0; b<120; b++) {
                                          particles.push({ 
                                              x: player.x + playerSize/2, 
                                              y: player.y + playerSize/2, 
-                                             vx: (Math.random()-0.5)*25, 
-                                             vy: (Math.random()-1)*25, 
-                                             s: Math.random()*12 + 4, 
+                                             vx: (Math.random()-0.5)*30, 
+                                             vy: (Math.random()-1.2)*25, 
+                                             s: Math.random()*15 + 4, 
                                              c: '#8B4513', 
-                                             l: 1.5 
+                                             l: 1.5 + Math.random() 
                                          }); 
                                      } 
                                  } 
                              }, 3500); 
                         }
                     }
-                    let goal = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : 140;
+                    let goal = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : currentLevel === 4 ? 130 : 180;
                     if(itemsCollected === goal) {
-                        if(currentLevel === 4) {
+                        if(currentLevel === 5) {
                             gameActive = false;
-                            if(currentSeconds < bestTime) { localStorage.setItem("skateBajsBestTime", currentSeconds); alert("YEAH! NYTT REKORD: " + currentSeconds + " sek!"); }
+                            if(currentSeconds < bestTime) { localStorage.setItem("skateBajsBestTime", currentSeconds); alert("YEAH! REKORD: " + currentSeconds + " sek!"); }
                             else { alert("Bra kört! Tid: " + currentSeconds + " sek"); }
                             location.reload();
                         } else triggerTransition();
@@ -236,19 +241,18 @@
         collectables.forEach(c => {
             ctx.save();
             if(c.isGold) { ctx.shadowBlur = 25; ctx.shadowColor = "gold"; }
+            else if(currentLevel === 5 && c.typeIdx === 0) { ctx.shadowBlur = 20; ctx.shadowColor = "#ffe0f0"; }
             else if(currentLevel === 3) { ctx.shadowBlur = 15; ctx.shadowColor = "white"; }
             let img = c.isGold ? assets.gold : assets.items['lvl'+currentLevel][c.typeIdx];
             ctx.drawImage(img, c.x, c.y, c.sW, c.sH);
             ctx.restore();
         });
 
-        // RITA ELD (NÄRMARE) & SPELARE
         ctx.save();
         if (boostTimer > 0) {
             let fireW = playerSize * 0.95;
             let fireH = fireW * (assets.fire.naturalHeight / assets.fire.naturalWidth || 1);
-            // Elden ännu närmare skateboarden (-0.75 istället för -0.85)
-            ctx.drawImage(assets.fire, player.x - fireW * 0.75, player.y + playerSize * 0.45 - fireH / 2, fireW, fireH);
+            ctx.drawImage(assets.fire, player.x - fireW * 0.70, player.y + playerSize * 0.45 - fireH / 2, fireW, fireH);
         }
         ctx.drawImage(assets.player, player.x, player.y, playerSize, playerSize);
         ctx.restore();
@@ -264,7 +268,7 @@
         if (gameActive) {
             ctx.fillStyle = "white"; ctx.font = "bold 20px Courier";
             ctx.fillText(`⏱️ ${currentSeconds}s`, 30, 40);
-            let g = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : 140;
+            let g = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : currentLevel === 4 ? 130 : 180;
             ctx.fillText(`✨ ${itemsCollected}/${g}`, 30, 70);
             ctx.fillText(`LVL ${currentLevel}`, 30, 100);
         }
