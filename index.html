@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen: Speedrun Edition</title>
+    <title>Skate-bajsen: Superprutt Edition</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
@@ -67,7 +67,7 @@
     document.getElementById("best-time-display").innerText = bestTime === Infinity ? "-- sek" : bestTime + " sek";
 
     const assets = {
-        bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), player: new Image(), gold: new Image(),
+        bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), player: new Image(), gold: new Image(), fire: new Image(),
         items: {
             lvl1: [new Image(), new Image(), new Image()],
             lvl2: [new Image(), new Image(), new Image()],
@@ -76,7 +76,7 @@
         }
     };
     assets.bg1.src = 'pixel_background.png'; assets.bg2.src = 'pixel_background2.png'; assets.bg3.src = 'pixel_background3.png'; assets.bg4.src = 'pixel_background4.png';
-    assets.player.src = 'bajskorv_sprite.png'; assets.gold.src = 'gold_poop.png';
+    assets.player.src = 'bajskorv_sprite.png'; assets.gold.src = 'gold_poop.png'; assets.fire.src = 'fire_sprite.png';
     assets.items.lvl1[0].src = 'unicorn_sprite.png'; assets.items.lvl1[1].src = 'star_sprite.png'; assets.items.lvl1[2].src = 'heart_sprite.png';
     assets.items.lvl2[0].src = 'candy1.png'; assets.items.lvl2[1].src = 'candy2.png'; assets.items.lvl2[2].src = 'candy3.png';
     assets.items.lvl3[0].src = 'zebra_sprite.png'; assets.items.lvl3[1].src = 'giraffe_sprite.png'; assets.items.lvl3[2].src = 'monkey_sprite.png';
@@ -85,6 +85,9 @@
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
     const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const nextLevelSound = new Audio('nextlevel.mp3'), buttonSound = new Audio('button.mp3'), chokladSound = new Audio('choklad.m4a'), neighSound = new Audio('neigh.m4a');
+    
+    // NYTT LJUD: SUPERPRUTT!
+    const superpruttSound = new Audio('superprutt.m4a');
 
     let audioCtx, gainNode, gameMusic, currentMusicFile = 'music.mp3';
     let collectables = [], particles = [], spawnTimer = 0;
@@ -105,19 +108,13 @@
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
         rotateMessage.style.display = (h > w && /Android|iPhone/i.test(navigator.userAgent)) ? "flex" : "none";
-        
         const colors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16"];
         canvas.style.backgroundColor = colors[currentLevel-1];
-
         groundY = (currentLevel === 1) ? h * 0.75 : (currentLevel === 2) ? h * 0.85 : (currentLevel === 3) ? h * 0.82 : h * 0.80;
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.75;
         bgScale = groundY / (h * 0.65);
+        if(!transitioning) { player.x = w * 0.22; player.y = groundY - playerSize; }
         player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
-        
-        if(!transitioning) {
-            player.x = w * 0.22;
-            player.y = groundY - playerSize;
-        }
     }
 
     function startGame() {
@@ -155,7 +152,6 @@
         }
     }
 
-    // Input-lyssnare
     window.addEventListener("mousedown", (e) => { if(gameActive && e.target.tagName === 'CANVAS') jump(); });
     window.addEventListener("touchstart", (e) => { if(gameActive && e.target.tagName === 'CANVAS') { e.preventDefault(); jump(); } }, {passive: false});
     window.addEventListener("keydown", (e) => { if(e.code === "Space") jump(); });
@@ -181,11 +177,9 @@
                 let typeIdx = Math.floor(Math.random()*3);
                 let imgSet = assets.items['lvl'+currentLevel];
                 let img = isGold ? assets.gold : imgSet[typeIdx];
-                
                 let sW = isGold ? itemSize * 1.5 : itemSize;
                 let sH = sW;
                 if(img.complete) sH = sW * (img.naturalHeight/img.naturalWidth);
-
                 collectables.push({ x: w, y: groundY - sH - Math.random()*(h*0.4), sW, sH, typeIdx, isGold });
                 spawnTimer = 0; totalItemsSpawned++;
             }
@@ -199,7 +193,11 @@
                         playSound(wowSound);
                     } else {
                         itemsCollected++;
-                        if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1)) boostTimer = 120;
+                        // BOOST & SUPERPRUTT!
+                        if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1)) {
+                            boostTimer = 120;
+                            playSound(superpruttSound);
+                        }
                         if(currentLevel === 2 && c.typeIdx === 0) playSound(chokladSound);
                         if(currentLevel === 4 && c.typeIdx === 2) playSound(neighSound);
                         if(itemsCollected % 12 === 0) playSound(braJobbatSound);
@@ -208,13 +206,12 @@
                              setTimeout(() => { if (gameActive) { for(let b=0; b<50; b++) particles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*20, vy: (Math.random()-1)*20, s: 10, c: '#8B4513', l: 1 }); } }, 2000);
                         }
                     }
-                    
                     let goal = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : 140;
                     if(itemsCollected === goal) {
                         if(currentLevel === 4) {
                             gameActive = false;
                             if(currentSeconds < bestTime) { localStorage.setItem("skateBajsBestTime", currentSeconds); alert("LETS GO! NYTT REKORD: " + currentSeconds + " sek!"); }
-                            else { alert("LETS GO! Grym tid: " + currentSeconds + " sek"); }
+                            else { alert("LETS GO! Tid: " + currentSeconds + " sek"); }
                             location.reload();
                         } else triggerTransition();
                     }
@@ -233,8 +230,18 @@
             ctx.restore();
         });
 
-        if(boostTimer > 0) { ctx.fillStyle = "orange"; ctx.beginPath(); ctx.arc(player.x + 20, player.y + playerSize/2, 30, 0, 7); ctx.fill(); }
+        // RITA ELD & SPELARE
+        ctx.save();
+        if (boostTimer > 0) {
+            let fireW = playerSize * 0.9;
+            let fireH = fireW;
+            if (assets.fire.complete && assets.fire.naturalWidth > 0) {
+                fireH = fireW * (assets.fire.naturalHeight / assets.fire.naturalWidth);
+            }
+            ctx.drawImage(assets.fire, player.x - fireW * 1.05, player.y + playerSize * 0.45 - fireH / 2, fireW, fireH);
+        }
         ctx.drawImage(assets.player, player.x, player.y, playerSize, playerSize);
+        ctx.restore();
         
         particles.forEach((p, i) => {
             p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.02;
