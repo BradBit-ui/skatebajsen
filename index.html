@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: VICTORY DANCE EDITION</title>
+    <title>Skate-bajsen: VICTORY PARTY</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -15,29 +15,54 @@
             justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; 
         }
 
-        /* Dans-animation för vinstskärmen */
+        /* Festligare vinstskärm */
+        #win-screen {
+            background: radial-gradient(circle, rgba(241,196,15,0.2) 0%, rgba(0,0,0,0.95) 70%);
+        }
+
         @keyframes victoryDance {
-            0% { transform: translateY(0) rotate(0deg) scale(1); }
-            25% { transform: translateY(-30px) rotate(5deg) scale(1.1); }
-            50% { transform: translateY(0) rotate(0deg) scale(1); }
-            75% { transform: translateY(-30px) rotate(-5deg) scale(1.1); }
-            100% { transform: translateY(0) rotate(0deg) scale(1); }
+            0% { transform: translateY(0) rotate(0deg) scale(1.2); }
+            25% { transform: translateY(-40px) rotate(10deg) scale(1.3); }
+            50% { transform: translateY(0) rotate(0deg) scale(1.2); }
+            75% { transform: translateY(-40px) rotate(-10deg) scale(1.3); }
+            100% { transform: translateY(0) rotate(0deg) scale(1.2); }
         }
 
         .winner-sprite {
-            width: 200px;
-            margin-bottom: 20px;
-            animation: victoryDance 0.6s infinite ease-in-out;
+            width: 250px;
+            margin-bottom: 30px;
+            animation: victoryDance 0.5s infinite ease-in-out;
+            filter: drop-shadow(0 0 20px #f1c40f);
         }
 
-        .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 20px; pointer-events: auto; }
-        .lvl-btn { width: 45px; height: 45px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 18px; }
-        .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 15px #f1c40f; }
-        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; pointer-events: auto; }
+        .victory-title {
+            font-size: 80px;
+            color: #f1c40f;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 4px 4px 0px #d35400, 0 0 30px rgba(241,196,15,0.5);
+        }
+
+        .game-btn-large { 
+            padding: 25px 60px; 
+            font-size: 32px; 
+            background-color: #f1c40f; 
+            border: 6px solid #000; 
+            cursor: pointer; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            margin-top: 30px; 
+            box-shadow: 0 10px 0 #d35400;
+            transition: transform 0.1s;
+        }
+        .game-btn-large:active { transform: translateY(5px); box-shadow: 0 5px 0 #d35400; }
+
+        .lvl-btn { width: 50px; height: 50px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: bold; }
+        .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 20px #f1c40f; }
         
-        @keyframes wowPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
-        .wow-text { position: absolute; color: #f1c40f; font-size: 80px; font-weight: bold; z-index: 200; pointer-events: none; animation: wowPop 1s ease-out forwards; text-shadow: 4px 4px 0px #d35400; }
-        #boss-instr { position: absolute; top: 20%; width: 100%; color: #f1c40f; font-size: 30px; font-weight: bold; text-align: center; z-index: 80; pointer-events: none; text-shadow: 2px 2px 5px black; }
+        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; pointer-events: auto; }
+        #boss-instr { position: absolute; top: 20%; width: 100%; color: #f1c40f; font-size: 35px; font-weight: bold; text-align: center; z-index: 80; pointer-events: none; text-shadow: 3px 3px 0px black; }
     </style>
 </head>
 <body onclick="canvas.focus()">
@@ -48,13 +73,13 @@
     <div id="boss-instr" style="display:none;">FÅNGA RULLEN - HOPPA FÖR ATT SKJUTA!</div>
     
     <div id="level-intro" style="display:none;">
-        <h1 id="level-intro-text" style="font-size: 80px;">LEVEL 1</h1>
+        <h1 id="level-intro-text" style="font-size: 100px; text-shadow: 5px 5px 0 black;">LEVEL 1</h1>
     </div>
 
     <div id="start-menu">
-        <img src="bajskorv_sprite.png" style="height: 30vh; margin-bottom: 15px;">
-        <h1>SKATE-BAJSEN</h1>
-        <div style="display: flex; gap: 10px; margin: 15px 0;">
+        <img src="bajskorv_sprite.png" style="height: 35vh; margin-bottom: 20px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));">
+        <h1 style="font-size: 60px; margin: 0;">SKATE-BAJSEN</h1>
+        <div style="display: flex; gap: 15px; margin: 25px 0;">
             <div class="lvl-btn active" onclick="selectLevel(1)">1</div>
             <div class="lvl-btn" onclick="selectLevel(2)">2</div>
             <div class="lvl-btn" onclick="selectLevel(3)">3</div>
@@ -66,19 +91,20 @@
     </div>
 
     <div id="level-menu" style="display:none;">
-        <h1>KLAR!</h1>
+        <h1 style="font-size: 70px;">KLAR!</h1>
         <button class="game-btn-large" onclick="nextLevelBtn()">NÄSTA NIVÅ</button>
     </div>
 
     <div id="win-screen" style="display:none;">
         <img src="bajskorv_sprite.png" class="winner-sprite">
-        <h1 style="color:#f1c40f; font-size: 60px;">GRATTIS!!!</h1>
-        <p style="font-size: 24px;">DU BESEGRADE BOSSEN OCH RÄDDADE SKATEPARKEN!</p>
+        <h1 class="victory-title">GRATTIS!!!</h1>
+        <p style="font-size: 28px; margin: 10px 0;">DU BESEGRADE BOSSEN!</p>
+        <p style="font-size: 20px; color: #ccc;">SKATEPARKEN ÄR RÄDDAD</p>
         <button class="game-btn-large" onclick="location.reload()">SPELA IGEN</button>
     </div>
 
     <div id="ui-layer">
-        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.1">
+        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.2">
     </div>
 </div>
 
@@ -89,7 +115,7 @@
     let gameActive = false, transitioning = false, itemsCollected = 0, currentLevel = 1, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed = 7, boostTimer = 0;
     let bossHealth = 200, maxBossHealth = 200, hasPaperAmmo = 0, pipeTimer = 0, projectile = null, playerRotation = 0;
-    let bossHitTimer = 0;
+    let bossHitTimer = 0, winPlayed = false; // Flagga för ljudfix
 
     const levelGoals = [30, 35, 40, 40, 50];
 
@@ -125,7 +151,6 @@
         bossOuch: [new Audio('ouch.m4a'), new Audio('Aj.m4a'), new Audio('dinlilla.m4a')]
     };
 
-    // Isolerat win-ljud
     const winAudio = new Audio('win.mp3');
 
     let gameMusic = new Audio(); gameMusic.loop = true;
@@ -144,10 +169,26 @@
     }
 
     function playWinSound() {
+        if (winPlayed) return; // Kör bara en gång!
+        winPlayed = true;
         stopAllAudio();
         winAudio.currentTime = 0;
         winAudio.volume = 1.0;
-        winAudio.play().catch(e => console.log("Ljud blockerat"));
+        winAudio.play().catch(e => console.log("Ljudblockering"));
+        
+        // Skapa konfetti-fest
+        for(let i=0; i<150; i++) {
+            particles.push({
+                x: Math.random() * w,
+                y: -20,
+                vx: Math.random() * 10 - 5,
+                vy: Math.random() * 15 + 5,
+                s: Math.random() * 10 + 5,
+                c: `hsl(${Math.random() * 360}, 80%, 50%)`,
+                l: 4.0,
+                isConfetti: true
+            });
+        }
     }
 
     function playSound(s) { s.currentTime = 0; s.volume = 1.0; s.play().catch(()=>{}); }
@@ -155,7 +196,7 @@
 
     function updateMusicVolume() {
         let baseVol = parseFloat(volumeSlider.value);
-        gameMusic.volume = currentLevel === 6 ? Math.min(1.0, baseVol * 2) : baseVol;
+        gameMusic.volume = currentLevel === 6 ? Math.min(1.0, baseVol * 2.5) : baseVol;
     }
 
     function triggerWow(x, y, playAudio = true) {
@@ -222,7 +263,7 @@
         }, 1500);
     }
 
-    window.nextLevelBtn = function() { currentLevel++; itemsCollected = 0; startGame(); };
+    window.nextLevelBtn = function() { currentLevel++; winPlayed = false; itemsCollected = 0; startGame(); };
 
     let collectables = [], spawnTimer = 0, particles = [];
 
@@ -240,12 +281,12 @@
             if(bg && bg.complete) ctx.drawImage(bg, 0, 0, w, h);
             
             let bossX = w * 0.75, bossY = h * 0.2 + Math.sin(Date.now()*0.003)*40;
-            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(bossX - 10, bossY - 40, (playerSize*1.8) + 20, 20);
-            ctx.fillStyle = "red"; ctx.fillRect(bossX, bossY-35, playerSize*1.8, 10);
-            ctx.fillStyle = "#2ecc71"; ctx.fillRect(bossX, bossY-35, (playerSize*1.8)*(bossHealth/maxBossHealth), 10);
+            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(bossX - 10, bossY - 45, (playerSize*1.8) + 20, 25);
+            ctx.fillStyle = "red"; ctx.fillRect(bossX, bossY-40, playerSize*1.8, 15);
+            ctx.fillStyle = "#2ecc71"; ctx.fillRect(bossX, bossY-40, (playerSize*1.8)*(bossHealth/maxBossHealth), 15);
 
             ctx.save();
-            if(bossHitTimer > 0) { ctx.translate(Math.random()*15-7, Math.random()*15-7); ctx.filter = 'sepia(1) saturate(20) hue-rotate(0deg)'; bossHitTimer--; }
+            if(bossHitTimer > 0) { ctx.translate(Math.random()*20-10, Math.random()*20-10); ctx.filter = 'sepia(1) saturate(20) hue-rotate(0deg)'; bossHitTimer--; }
             if(assets.boss.complete) ctx.drawImage(assets.boss, bossX, bossY, playerSize*1.8, playerSize*1.8);
             ctx.restore();
 
@@ -259,31 +300,31 @@
                 } else if(projectile.x > w) projectile = null;
             }
 
-            if(bossHealth <= 0) { 
+            if(bossHealth <= 0 && gameActive) { 
                 gameActive = false; 
-                playWinSound(); //
+                playWinSound();
                 document.getElementById("win-screen").style.display="flex"; 
             }
             spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bossX, y: bossY+100, isPaper: true, vx: -12, sW: 60, sH: 60}); spawnTimer = 0; }
         } else {
-            let speed = boostTimer > 0 ? bgSpeed * 2 : bgSpeed;
+            let speed = boostTimer > 0 ? bgSpeed * 2.5 : bgSpeed;
             if(boostTimer > 0) boostTimer--;
             if(bg && bg.complete) {
                 bgScroll -= speed * 0.5; if(bgScroll <= -w) bgScroll = 0;
                 ctx.drawImage(bg, bgScroll, 0, w, h); ctx.drawImage(bg, bgScroll + w, 0, w, h);
             }
-            if(transitioning) { player.x += 15; player.velocityY = 0; }
+            if(transitioning) { player.x += 18; player.velocityY = 0; }
             else {
                 player.velocityY += player.gravity; player.y += player.velocityY;
                 if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
                 spawnTimer++;
-                if(spawnTimer > 50) {
+                if(spawnTimer > 45) {
                     let imgSet = assets.items['lvl'+currentLevel];
                     if(imgSet) {
-                        let isGold = Math.random() < 0.05, isRandomBig = Math.random() < 0.10, typeIdx = Math.floor(Math.random()*3);
+                        let isGold = Math.random() < 0.05, isRandomBig = Math.random() < 0.12, typeIdx = Math.floor(Math.random()*3);
                         let targetImg = isGold ? assets.gold : imgSet[typeIdx];
                         let sW = (isGold || isRandomBig) ? itemSize * 2 : itemSize;
-                        collectables.push({ x: w, y: groundY - (sW*(targetImg.naturalHeight/targetImg.naturalWidth||1)) - Math.random()*200, sW: sW, sH: sW*(targetImg.naturalHeight/targetImg.naturalWidth||1), img: targetImg, isGold: isGold, isPaper: false, typeIdx: typeIdx, isBig: isRandomBig });
+                        collectables.push({ x: w, y: groundY - (sW*(targetImg.naturalHeight/targetImg.naturalWidth||1)) - Math.random()*250, sW: sW, sH: sW*(targetImg.naturalHeight/targetImg.naturalWidth||1), img: targetImg, isGold: isGold, isPaper: false, typeIdx: typeIdx, isBig: isRandomBig });
                     }
                     spawnTimer = 0;
                 }
@@ -292,9 +333,9 @@
 
         for(let i = collectables.length - 1; i >= 0; i--) {
             let c = collectables[i];
-            if(currentLevel === 6) c.x += c.vx; else c.x -= (boostTimer > 0 ? bgSpeed * 2 : bgSpeed);
+            if(currentLevel === 6) c.x += c.vx; else c.x -= (boostTimer > 0 ? bgSpeed * 2.5 : bgSpeed);
             if(!transitioning && player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                if(c.isGold) { playSound(sounds.yeah); for(let g=0; g<40; g++) particles.push({x: c.x + c.sW/2, y: c.y + c.sH/2, vx: Math.random()*20-10, vy: Math.random()*20-10, s: Math.random()*8+2, c: '#f1c40f', l: 1.5, isGlitter: true }); }
+                if(c.isGold) { playSound(sounds.yeah); for(let g=0; g<50; g++) particles.push({x: c.x + c.sW/2, y: c.y + c.sH/2, vx: Math.random()*25-12.5, vy: Math.random()*25-12.5, s: Math.random()*10+2, c: '#f1c40f', l: 1.8, isGlitter: true }); }
                 else if(c.isPaper) { hasPaperAmmo++; playSound(sounds.jump); }
                 else {
                     if(c.isBig) triggerWow(player.x, player.y - 100);
@@ -303,14 +344,14 @@
                     if(itemsCollected % 12 === 0) playSound(sounds.braJobbat);
                     if(currentLevel === 5 && c.typeIdx === 0) playSound(sounds.mjau);
                     if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1) || (currentLevel === 5 && (c.typeIdx === 0 || c.typeIdx === 2))) boostTimer = 120;
-                    if(itemsCollected % 25 === 0) { playSound(sounds.mega); setTimeout(() => { if(gameActive) { for(let j=0; j<80; j++) particles.push({x: player.x, y: player.y, vx: Math.random()*30-15, vy: Math.random()*-25, s: Math.random()*15+5, c: '#8B4513', l: 2.5}); } }, 3500); }
+                    if(itemsCollected % 25 === 0) { playSound(sounds.mega); setTimeout(() => { if(gameActive) { for(let j=0; j<100; j++) particles.push({x: player.x, y: player.y, vx: Math.random()*40-20, vy: Math.random()*-30, s: Math.random()*18+5, c: '#8B4513', l: 2.8}); } }, 3500); }
                     
                     let goal = levelGoals[currentLevel-1];
                     if(itemsCollected >= goal) { transitioning = true; playSound(sounds.next); setTimeout(() => { gameActive = false; document.getElementById("level-menu").style.display="flex"; }, 1500); }
                 }
                 collectables.splice(i, 1);
             }
-            if(c.x < -200 || c.x > w + 200) collectables.splice(i, 1);
+            if(c.x < -300 || c.x > w + 300) collectables.splice(i, 1);
             if(c.img && c.img.complete) ctx.drawImage(c.img, c.x, c.y, c.sW, c.sH);
             else if(c.isPaper && assets.paper.complete) ctx.drawImage(assets.paper, c.x, c.y, 60, 60);
         }
@@ -319,16 +360,21 @@
         if(boostTimer > 0 && assets.fire.complete) ctx.drawImage(assets.fire, -playerSize, -playerSize/4, playerSize, playerSize/2);
         ctx.drawImage(assets.player, -playerSize/2, -playerSize/2, playerSize, playerSize); ctx.restore();
 
-        particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += p.isGlitter ? 0.2 : 0.4; p.l -= 0.02; ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill(); if(p.l<=0) particles.splice(i,1); });
+        particles.forEach((p, i) => { 
+            p.x += p.vx; p.y += p.vy; 
+            if(p.isGlitter || p.isConfetti) { p.vy += 0.15; p.vx *= 0.99; } else { p.vy += 0.45; } 
+            p.l -= p.isConfetti ? 0.005 : 0.02; 
+            ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c; 
+            if(p.isConfetti) ctx.fillRect(p.x, p.y, p.s, p.s);
+            else { ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill(); }
+            if(p.l<=0) particles.splice(i,1); 
+        });
         ctx.globalAlpha = 1;
 
         if (gameActive) { 
-            ctx.fillStyle = "white"; ctx.font = "bold 24px Courier"; 
-            if(currentLevel === 6) {
-                ctx.fillText(`🧻 AMMO: ${hasPaperAmmo}`, 20, 40); 
-            } else {
-                ctx.fillText(`✨ ${itemsCollected} / ${levelGoals[currentLevel-1]}`, 20, 40); 
-            }
+            ctx.fillStyle = "white"; ctx.font = "bold 28px Courier"; 
+            if(currentLevel === 6) { ctx.fillText(`🧻 AMMO: ${hasPaperAmmo}`, 30, 50); } 
+            else { ctx.fillText(`✨ ${itemsCollected} / ${levelGoals[currentLevel-1]}`, 30, 50); }
         }
         requestAnimationFrame(gameLoop);
     }
