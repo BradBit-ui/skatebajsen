@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: BACKGROUND FIX</title>
+    <title>Skate-bajsen: BOSS SHAKE EDITION</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -57,7 +57,7 @@
     let gameActive = false, transitioning = false, itemsCollected = 0, currentLevel = 1, bgScroll = 0;
     let w, h, groundY, playerSize, itemSizeBase, bgSpeed = 7, boostTimer = 0;
     let bossHealth = 200, maxBossHealth = 200, hasPaperAmmo = 0, pipeTimer = 0, projectile = null, playerRotation = 0;
-    let bossHitTimer = 0, winPlayed = false;
+    let bossHitTimer = 0, winPlayed = false, screenShake = 0;
 
     const levelGoals = [30, 35, 40, 40, 50];
     const introColors = ["#3498db", "#e91e63", "#2ecc71", "#9b59b6", "#e67e22", "#c0392b"];
@@ -72,19 +72,6 @@
     };
     const winAudio = new Audio('win.mp3');
     let gameMusic = new Audio(); gameMusic.loop = true;
-
-    const assets = { bg: [], player: new Image(), fire: new Image(), boss: new Image(), paper: new Image(), gold: new Image(), items: { lvl1: [], lvl2: [], lvl3: [], lvl4: [], lvl5: [] } };
-    assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png'; assets.fire.src = 'fire_sprite.png'; assets.gold.src = 'gold_poop.png';
-    
-    // Fix: Ladda pixel_background1.png till pixel_background6.png konsekvent
-    for(let i=1; i<=6; i++) { 
-        let img = new Image(); 
-        img.src = `pixel_background${i}.png`; 
-        assets.bg.push(img); 
-    }
-
-    function loadLvl(l, i1, i2, i3) { assets.items['lvl'+l] = [new Image(), new Image(), new Image()]; assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3; }
-    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png'); loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png'); loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png'); loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png'); loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
 
     function triggerWow(x, y) {
         const wow = document.createElement('div'); wow.className = 'wow-text'; wow.innerText = 'WOW!';
@@ -114,11 +101,25 @@
     window.selectLevel = (n) => { currentLevel = n; document.querySelectorAll('.lvl-btn').forEach((b,i)=>b.classList.toggle('active', i===n-1)); };
     window.nextLevelBtn = () => { currentLevel++; winPlayed = false; itemsCollected = 0; startGame(); };
 
+    const assets = { bg: [], player: new Image(), fire: new Image(), boss: new Image(), paper: new Image(), gold: new Image(), items: { lvl1: [], lvl2: [], lvl3: [], lvl4: [], lvl5: [] } };
+    assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png'; assets.fire.src = 'fire_sprite.png'; assets.gold.src = 'gold_poop.png';
+    for(let i=1; i<=6; i++) { let img = new Image(); img.src = `pixel_background${i}.png`; assets.bg.push(img); }
+    function loadLvl(l, i1, i2, i3) { assets.items['lvl'+l] = [new Image(), new Image(), new Image()]; assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3; }
+    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png'); loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png'); loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png'); loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png'); loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
+
     let collectables = [], spawnTimer = 0, particles = [];
 
     function gameLoop() {
         requestAnimationFrame(gameLoop);
         if (!gameActive) return;
+
+        ctx.save();
+        if (screenShake > 0) { // SKÄRMSKAKNING LOGIK
+            ctx.translate(Math.random() * screenShake - screenShake/2, Math.random() * screenShake - screenShake/2);
+            screenShake *= 0.9;
+            if (screenShake < 0.5) screenShake = 0;
+        }
+
         ctx.clearRect(0, 0, w, h);
         let bg = assets.bg[currentLevel-1];
 
@@ -137,8 +138,9 @@
             if(projectile) {
                 projectile.x += 15; ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
                 if(projectile.x > bX && projectile.x < bX+playerSize*1.6 && projectile.y > bY && projectile.y < bY+playerSize*1.8) {
-                    bossHealth -= 15; bossHitTimer = 20; 
-                    let s = sounds.bossOuch[Math.floor(Math.random()*3)]; s.currentTime=0; s.play();
+                    bossHealth -= 15; bossHitTimer = 20; screenShake = 15; // TRIGGA SKAKNING
+                    let s = sounds.bossOuch[Math.floor(Math.random()*3)]; 
+                    s.volume = 1.0; s.currentTime = 0; s.play(); // VOLYMBOOST
                     projectile = null;
                 } else if(projectile.x > w) projectile = null;
             }
@@ -168,12 +170,9 @@
         for(let i = collectables.length - 1; i >= 0; i--) {
             let c = collectables[i]; c.x += (currentLevel === 6 ? c.vx : -(boostTimer > 0 ? bgSpeed * 2.5 : bgSpeed));
             if(!transitioning && player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                // CHOCO PRECISION FIX: Kolla soundDone flaggan och filnamnet
+                // CHOCO FIX: Endast candy1.png
                 if(currentLevel === 2 && c.img && c.img.src.endsWith('candy1.png') && !c.soundDone) { 
-                    c.soundDone = true; 
-                    sounds.choklad.currentTime = 0; 
-                    sounds.choklad.play(); 
-                    c.x = -2000; 
+                    c.soundDone = true; sounds.choklad.currentTime = 0; sounds.choklad.play(); c.x = -2000; 
                 }
                 if(c.isG) { sounds.yeah.play(); for(let g=0; g<40; g++) particles.push({x: player.x, y: player.y, vx: Math.random()*25-12.5, vy: Math.random()*25-12.5, s: Math.random()*8, c: '#f1c40f', l: 1 }); }
                 else if(c.isPaper) { hasPaperAmmo++; sounds.jump.currentTime=0; sounds.jump.play(); }
@@ -199,13 +198,13 @@
         particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.l -= 0.01; ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill(); if(p.l<=0) particles.splice(i,1); });
         ctx.globalAlpha = 1;
         if (gameActive) { ctx.fillStyle = "white"; ctx.font = "bold 28px Courier"; ctx.fillText(currentLevel===6?`🧻 AMMO: ${hasPaperAmmo}`:`✨ ${itemsCollected}/${levelGoals[currentLevel-1]}`, 30, 50); }
+        ctx.restore();
     }
 
     function resize() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; groundY = h*0.75; playerSize = h*0.25; itemSizeBase = playerSize*0.65; player.x = w*0.22; player.y = groundY-playerSize; }
     function checkOrientation() { if (window.innerHeight > window.innerWidth) document.getElementById('orientation-overlay').style.display = 'flex'; else { document.getElementById('orientation-overlay').style.display = 'none'; resize(); } }
     window.addEventListener('resize', checkOrientation);
     window.addEventListener("keydown", (e) => { if(e.code === "Space" && gameActive) { e.preventDefault(); if(!player.isJumping) { player.velocityY = player.jumpPower; player.isJumping = true; sounds.fart[Math.floor(Math.random()*3)].play(); } else if(currentLevel===6 && hasPaperAmmo>0) { hasPaperAmmo--; projectile={x:player.x, y:player.y}; playerRotation+=360; } } });
-    function playSound(s) { if(!gameActive) return; s.currentTime = 0; s.volume = 1.0; s.play().catch(()=>{}); }
     checkOrientation(); gameLoop();
 </script>
 </body>
