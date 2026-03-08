@@ -2,30 +2,25 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-area=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen - Level 3: Djurparken</title>
+    <title>Skate-bajsen - Level 4: Rymden</title>
     <style>
         body { margin: 0; padding: 0; background-color: #ffb6c1; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
-        
         #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .phone-icon { font-size: 80px; animation: rotateAnim 2s infinite ease-in-out; }
         @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
-
         #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 50; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
         .slider-label { color: white; font-size: 11px; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; }
         #volume-slider { cursor: pointer; width: 120px; accent-color: #f1c40f; }
-        
         #start-menu, #level-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
         .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; font-weight: bold; text-transform: uppercase; }
         #go-btn { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         h1 { font-size: 8vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin-bottom: 10px; }
-        
-        /* Level-menyer (byts baserat på level) */
-        #level-menu { display: none; background: rgba(255, 182, 193, 0.95); } /* Standardrosa */
+        #level-menu { display: none; background: rgba(255, 182, 193, 0.95); }
     </style>
 </head>
 <body>
@@ -62,28 +57,32 @@
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const volSettings = isMobile ? { start: 0.35, game: 0.06 } : { start: 0.12, game: 0.12 };
     volumeSlider.value = volSettings.start;
-    document.getElementById("device-info").innerText = `🎵 Musik (${isMobile ? 'MOBIL' : 'DESKTOP'})`;
 
-    // LJUD & BILDER
     let audioCtx, gainNode, gameMusic;
     const assets = {
-        bg1: new Image(), bg2: new Image(), bg3: new Image(), player: new Image(),
+        bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), player: new Image(),
         items: {
             lvl1: [new Image(), new Image(), new Image()],
             lvl2: [new Image(), new Image(), new Image()],
-            lvl3: [new Image(), new Image(), new Image()] // Nya bilder för Level 3
+            lvl3: [new Image(), new Image(), new Image()],
+            lvl4: [new Image(), new Image(), new Image()]
         }
     };
-    assets.bg1.src = 'pixel_background.png'; assets.bg2.src = 'pixel_background2.png'; assets.bg3.src = 'pixel_background3.png';
+    assets.bg1.src = 'pixel_background.png'; assets.bg2.src = 'pixel_background2.png'; assets.bg3.src = 'pixel_background3.png'; assets.bg4.src = 'pixel_background4.png';
     assets.player.src = 'bajskorv_sprite.png';
     assets.items.lvl1[0].src = 'unicorn_sprite.png'; assets.items.lvl1[1].src = 'star_sprite.png'; assets.items.lvl1[2].src = 'heart_sprite.png';
     assets.items.lvl2[0].src = 'candy1.png'; assets.items.lvl2[1].src = 'candy2.png'; assets.items.lvl2[2].src = 'candy3.png';
-    // Level 3 objekt
     assets.items.lvl3[0].src = 'zebra_sprite.png'; assets.items.lvl3[1].src = 'giraffe_sprite.png'; assets.items.lvl3[2].src = 'monkey_sprite.png';
+    
+    // Level 4 objekt - Uppdaterad med enhörning
+    assets.items.lvl4[0].src = 'planet_sprite.png'; assets.items.lvl4[1].src = 'alien_sprite.png'; assets.items.lvl4[2].src = 'unicorn_sprite.png'; // <- Byt ut raket mot enhörning
 
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
     const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const nextLevelSound = new Audio('nextlevel.mp3'), buttonSound = new Audio('button.mp3'), chokladSound = new Audio('choklad.m4a');
+    
+    // NYTT LJUD FÖR GNÄGG
+    const neighSound = new Audio('neigh.m4a');
 
     let currentMusicFile = 'music.mp3';
     let confetti = [];
@@ -110,8 +109,12 @@
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
         rotateMessage.style.display = (isMobile && h > w) ? "flex" : "none";
-        // Justera groundY för olika bakgrunder (Djurparken har en lägre väg)
-        groundY = (currentLevel === 1) ? h * 0.75 : (currentLevel === 2) ? h * 0.85 : h * 0.82;
+        
+        if (currentLevel === 1) groundY = h * 0.75;
+        else if (currentLevel === 2) groundY = h * 0.85;
+        else if (currentLevel === 3) groundY = h * 0.82;
+        else groundY = h * 0.80; // Rymden
+
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
         bgScale = groundY / (h * 0.65);
         if(!transitioning) player.x = w * 0.22;
@@ -135,9 +138,8 @@
     }
 
     function startNextLevel() {
-        // Denna hanterar både Go till Level 2 och Go till Level 3
         playSound(buttonSound);
-        currentLevel++; // NU byter vi level officiellt (blir 2 eller 3)
+        currentLevel++;
         setTimeout(startGame, 100);
     }
 
@@ -165,26 +167,31 @@
 
     function showLevelMenu() {
         levelMenu.style.display = "flex";
-        
-        // Dynamiskt innehåll för menyn baserat på vilken level vi PRECIS klarat (animationen byter inte level än)
         let nextLvl = currentLevel + 1;
         document.getElementById("level-title").innerText = `LEVEL ${nextLvl}`;
         
         if (nextLvl === 2) {
             document.getElementById("level-desc").innerText = "Grymt jobbat! Välkommen till Godislandet!";
             currentMusicFile = 'music2.mp3';
-            levelMenu.style.background = "rgba(255, 182, 193, 0.95)"; // Rosa Godislandet
+            levelMenu.style.background = "rgba(255, 182, 193, 0.95)";
         } else if (nextLvl === 3) {
             document.getElementById("level-desc").innerText = "Snyggt! Nu drar vi till Djurparken!";
-            currentMusicFile = 'music3.mp3'; // Ladda upp music3.mp3 om du vill
-            levelMenu.style.background = "rgba(100, 200, 100, 0.95)"; // Grön Djurpark
+            currentMusicFile = 'music3.mp3';
+            levelMenu.style.background = "rgba(100, 200, 100, 0.95)";
+        } else if (nextLvl === 4) {
+            document.getElementById("level-desc").innerText = "Otroligt! Redo för Rymden?";
+            currentMusicFile = 'music4.mp3';
+            levelMenu.style.background = "rgba(44, 62, 80, 0.95)";
         }
         
         if(gameMusic) gameMusic.src = currentMusicFile;
         createConfetti();
     }
 
-    document.getElementById("start-btn-menu").addEventListener("click", startGame);
+    document.getElementById("start-btn-menu").addEventListener("click", () => {
+        playSound(buttonSound);
+        startGame();
+    });
     document.getElementById("go-btn").addEventListener("click", startNextLevel);
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
@@ -206,7 +213,7 @@
 
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
-        let currentBG = (currentLevel === 1) ? assets.bg1 : (currentLevel === 2) ? assets.bg2 : assets.bg3;
+        let currentBG = (currentLevel === 1) ? assets.bg1 : (currentLevel === 2) ? assets.bg2 : (currentLevel === 3) ? assets.bg3 : assets.bg4;
         ctx.drawImage(currentBG, bgScroll, -h*0.1, w * bgScale, h * bgScale);
         ctx.drawImage(currentBG, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
         
@@ -223,7 +230,7 @@
                 
                 let baseW = itemSize;
                 let baseH = itemSize;
-                let imgSet = (currentLevel === 1) ? assets.items.lvl1 : (currentLevel === 2) ? assets.items.lvl2 : assets.items.lvl3;
+                let imgSet = (currentLevel === 1) ? assets.items.lvl1 : (currentLevel === 2) ? assets.items.lvl2 : (currentLevel === 3) ? assets.items.lvl3 : assets.items.lvl4;
                 
                 if (imgSet[typeIdx].complete && imgSet[typeIdx].naturalWidth > 0) {
                     let ratio = imgSet[typeIdx].naturalHeight / imgSet[typeIdx].naturalWidth;
@@ -245,9 +252,12 @@
                     
                     // LJUDLOGIK
                     if (currentLevel === 2 && c.typeIdx === 0) playSound(chokladSound);
+                    
+                    // NY LJUDLOGIK FÖR ENHÖRNING PÅ LEVEL 4
+                    else if (currentLevel === 4 && c.typeIdx === 2) playSound(neighSound); // Spela gnägg för enhörningen
+                    
                     else if(itemsCollected % 12 === 0) playSound(braJobbatSound);
 
-                    // BAJSFEST (Var 25:e)
                     if(itemsCollected % 25 === 0) {
                         playSound(megaBajsSound);
                         setTimeout(() => { 
@@ -260,15 +270,13 @@
                         }, 3000);
                     }
                     
-                    // LEVEL-ÖVERGÅNGAR
-                    // Mål: Lvl 1=30, Lvl 2=50 (totalt 80 för att klara Lvl 2)
-                    if(itemsCollected === 30 && currentLevel === 1) {
-                        triggerNextLevelTransition();
-                    } else if (itemsCollected === 80 && currentLevel === 2) {
-                        triggerNextLevelTransition(); // Gå till Level 3 menyn
-                    } else if (itemsCollected === 130 && currentLevel === 3) {
+                    // Övergångar
+                    if(itemsCollected === 30 && currentLevel === 1) triggerNextLevelTransition();
+                    else if (itemsCollected === 80 && currentLevel === 2) triggerNextLevelTransition();
+                    else if (itemsCollected === 130 && currentLevel === 3) triggerNextLevelTransition();
+                    else if (itemsCollected === 180 && currentLevel === 4) {
                          gameActive = false;
-                         alert("GRATTIS! Du klarade hela spelet! Bajsfest!");
+                         alert("UNIVERSE DOMINATED! Du är herre över rymdbajset!");
                          location.reload();
                     }
 
@@ -278,7 +286,7 @@
         }
         
         collectables.forEach(c => {
-            let imgSet = (currentLevel === 1) ? assets.items.lvl1 : (currentLevel === 2) ? assets.items.lvl2 : assets.items.lvl3;
+            let imgSet = (currentLevel === 1) ? assets.items.lvl1 : (currentLevel === 2) ? assets.items.lvl2 : (currentLevel === 3) ? assets.items.lvl3 : assets.items.lvl4;
             ctx.drawImage(imgSet[c.typeIdx], c.x, c.y, c.sW, c.sH);
         });
 
@@ -302,8 +310,7 @@
 
         if (gameActive) {
             ctx.fillStyle = "white"; ctx.font = "bold 22px Courier";
-            // Dynamiskt mål: 30, 80 (30+50), eller 130 (80+50)
-            let goal = currentLevel === 1 ? 30 : currentLevel === 2 ? 80 : 130;
+            let goal = currentLevel === 1 ? 30 : currentLevel === 2 ? 80 : currentLevel === 3 ? 130 : 180;
             ctx.fillText("✨ " + itemsCollected + " / " + goal, 30, 50);
             ctx.fillText("LEVEL " + currentLevel, 30, 80);
         }
