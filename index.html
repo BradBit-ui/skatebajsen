@@ -4,26 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen - Level 2: Godislandet</title>
+    <title>Skate-bajsen - Level 2</title>
     <style>
         body { margin: 0; padding: 0; background-color: #ffb6c1; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
-        
         #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .phone-icon { font-size: 80px; animation: rotateAnim 2s infinite ease-in-out; }
         @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
-
         #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 50; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
         .slider-label { color: white; font-size: 11px; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; }
         #volume-slider { cursor: pointer; width: 120px; accent-color: #f1c40f; }
-        
         #start-menu, #level-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
         .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; font-weight: bold; text-transform: uppercase; }
         #go-btn { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         h1 { font-size: 8vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin-bottom: 10px; }
-        #level-menu { display: none; background: rgba(255, 182, 193, 0.95); } /* Rosa ton för godislandet */
+        #level-menu { display: none; background: rgba(255, 182, 193, 0.95); }
     </style>
 </head>
 <body>
@@ -60,24 +57,15 @@
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const volSettings = isMobile ? { start: 0.35, game: 0.06 } : { start: 0.12, game: 0.12 };
     volumeSlider.value = volSettings.start;
-    document.getElementById("device-info").innerText = `🎵 Musik (${isMobile ? 'MOBIL' : 'DESKTOP'})`;
 
-    // LJUD & BILDER
     let audioCtx, gainNode, gameMusic;
     const assets = {
-        bg1: new Image(), bg2: new Image(),
-        player: new Image(),
-        items: {
-            lvl1: [new Image(), new Image(), new Image()],
-            lvl2: [new Image(), new Image(), new Image()] // Nya bilder för Level 2
-        }
+        bg1: new Image(), bg2: new Image(), player: new Image(),
+        items: { lvl1: [new Image(), new Image(), new Image()], lvl2: [new Image(), new Image(), new Image()] }
     };
-    assets.bg1.src = 'pixel_background.png'; 
-    assets.bg2.src = 'pixel_background2.png'; // Din nya Godis-bakgrund
+    assets.bg1.src = 'pixel_background.png'; assets.bg2.src = 'pixel_background2.png';
     assets.player.src = 'bajskorv_sprite.png';
-    // Level 1 objekt
     assets.items.lvl1[0].src = 'unicorn_sprite.png'; assets.items.lvl1[1].src = 'star_sprite.png'; assets.items.lvl1[2].src = 'heart_sprite.png';
-    // Level 2 objekt - Ladda upp candy1.png, candy2.png, candy3.png
     assets.items.lvl2[0].src = 'candy1.png'; assets.items.lvl2[1].src = 'candy2.png'; assets.items.lvl2[2].src = 'candy3.png';
 
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
@@ -109,7 +97,12 @@
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
         rotateMessage.style.display = (isMobile && h > w) ? "flex" : "none";
-        groundY = h * 0.75; playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
+        
+        // JUSTERING: Level 2 bakgrunden har en lägre horisont. 
+        // Vi sänker groundY från 0.75 till 0.85 för att pricka chokladvägen bättre.
+        groundY = currentLevel === 1 ? h * 0.75 : h * 0.85;
+        
+        playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
         bgScale = groundY / (h * 0.65);
         if(!transitioning) player.x = w * 0.22;
         player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
@@ -123,21 +116,18 @@
         gameActive = true; transitioning = false;
         startMenu.style.display = "none";
         levelMenu.style.display = "none";
+        resize(); // Uppdatera groundY baserat på level
         player.y = groundY - playerSize;
         player.x = w * 0.22;
         playSound(wowSound);
         gameMusic.play();
-        if (isMobile) fadeVolume(volSettings.game);
+        if (isMobile) gainNode.gain.setTargetAtTime(volSettings.game, audioCtx.currentTime, 1.5);
     }
 
     function startLevel2() {
         playSound(buttonSound);
+        currentLevel = 2; // NU byter vi level officiellt
         setTimeout(startGame, 100);
-    }
-
-    function fadeVolume(target) {
-        if(!gainNode) return;
-        gainNode.gain.setTargetAtTime(target, audioCtx.currentTime, 1.5);
     }
 
     function triggerLevel2Transition() {
@@ -158,20 +148,13 @@
     function createConfetti() {
         confetti = [];
         for (let i = 0; i < 100; i++) {
-            confetti.push({
-                x: Math.random() * w,
-                y: -Math.random() * h,
-                size: Math.random() * 8 + 4,
-                color: `hsl(${Math.random() * 360}, 70%, 60%)`,
-                velocity: Math.random() * 3 + 2,
-                angle: Math.random() * 6.28
-            });
+            confetti.push({ x: Math.random() * w, y: -Math.random() * h, size: Math.random() * 8 + 4, color: `hsl(${Math.random() * 360}, 70%, 60%)`, velocity: Math.random() * 3 + 2, angle: Math.random() * 6.28 });
         }
     }
 
     function showLevel2Menu() {
         levelMenu.style.display = "flex";
-        currentMusicFile = 'music2.mp3'; // Byt till ny musik
+        currentMusicFile = 'music2.mp3';
         if(gameMusic) gameMusic.src = currentMusicFile;
         createConfetti();
     }
@@ -198,6 +181,8 @@
 
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
+        
+        // LOGIK: Bakgrunden byts bara om currentLevel faktiskt har ändrats till 2
         let currentBG = currentLevel === 1 ? assets.bg1 : assets.bg2;
         ctx.drawImage(currentBG, bgScroll, -h*0.1, w * bgScale, h * bgScale);
         ctx.drawImage(currentBG, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
@@ -221,8 +206,8 @@
                 if(c.x + c.size < 0) { collectables.splice(i, 1); continue; }
                 if(player.x < c.x + c.size && player.x + playerSize > c.x && player.y < c.y + c.size && player.y + playerSize > c.y) {
                     itemsCollected++;
+                    // Vid 30 poäng: Starta utåkning, men BYT INTE level-siffran än
                     if(itemsCollected === 30 && currentLevel === 1) {
-                        currentLevel = 2;
                         triggerLevel2Transition();
                     }
                     if(itemsCollected % 12 === 0) playSound(braJobbatSound);
@@ -230,29 +215,28 @@
                 }
             }
         }
-        ctx.fillStyle = "#333"; ctx.fillRect(0, groundY, w, h - groundY);
+        
+        // Rita väg (osynlig men ger rätt "fötter i marken"-känsla)
+        ctx.fillStyle = "transparent"; ctx.fillRect(0, groundY, w, h - groundY);
+        
         collectables.forEach(c => {
-            // Välj rätt bildset baserat på level
             let imgSet = currentLevel === 1 ? assets.items.lvl1 : assets.items.lvl2;
             ctx.drawImage(imgSet[c.typeIdx], c.x, c.y, c.size, c.size);
         });
+
         ctx.drawImage(assets.player, player.x, player.y, playerSize, playerSize);
 
-        // Rita konfetti om menyn är synlig
         if (levelMenu.style.display === "flex") {
             confetti.forEach((p, i) => {
-                p.y += p.velocity;
-                p.x += Math.sin(p.angle) * 2;
-                p.angle += 0.05;
-                ctx.fillStyle = p.color;
-                ctx.fillRect(p.x, p.y, p.size, p.size);
+                p.y += p.velocity; p.x += Math.sin(p.angle) * 2; p.angle += 0.05;
+                ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
                 if (p.y > h) p.y = -20;
             });
         }
 
         if (gameActive) {
             ctx.fillStyle = "white"; ctx.font = "bold 22px Courier";
-            ctx.fillText("✨ " + itemsCollected + " / 30", 30, 50);
+            ctx.fillText("✨ " + itemsCollected + (currentLevel === 1 ? " / 30" : ""), 30, 50);
             ctx.fillText("LEVEL " + currentLevel, 30, 80);
         }
         requestAnimationFrame(gameLoop);
