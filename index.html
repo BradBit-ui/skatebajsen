@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: THE ULTIMATE JUMP FIX</title>
+    <title>Skate-bajsen: FINAL REPAIR</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
-        canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; }
+        /* touch-action: none är kritisk för att hoppet ska fungera på mobil/padda */
+        canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; touch-action: none; }
         #start-menu, #level-menu, #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
         .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 20px; pointer-events: auto; }
-        .level-selector { display: flex; gap: 10px; margin: 15px 0; pointer-events: auto; }
-        .lvl-btn { width: 45px; height: 45px; background: #333; border: 3px solid #f1c40f; color: white; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 18px; }
+        .level-selector { display: flex; gap: 10px; margin: 15px 0; }
+        .lvl-btn { width: 45px; height: 45px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 18px; }
         .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 15px #f1c40f; }
-        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; pointer-events: auto; }
+        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; }
         @keyframes wowPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
         .wow-text { position: absolute; color: #f1c40f; font-size: 80px; font-weight: bold; z-index: 200; pointer-events: none; animation: wowPop 1s ease-out forwards; text-shadow: 4px 4px 0px #d35400; }
     </style>
@@ -49,7 +50,7 @@
     </div>
 
     <div id="ui-layer">
-        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.1">
     </div>
 </div>
 
@@ -118,11 +119,12 @@
         canvas.width = w; canvas.height = h;
         groundY = (currentLevel === 1) ? h * 0.75 : h * 0.82;
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.75;
-        if(currentLevel < 6) { player.x = w * 0.22; player.y = groundY - playerSize; }
+        if(!transitioning) {
+            if(currentLevel < 6) { player.x = w * 0.22; player.y = groundY - playerSize; }
+        }
     }
 
-    // --- RENODLAD HOPP-FUNKTION ---
-    function performJump() {
+    function jumpAction() {
         if(!gameActive || transitioning) return;
         if(!player.isJumping) {
             player.velocityY = player.jumpPower; player.isJumping = true; 
@@ -133,26 +135,24 @@
         }
     }
 
-    // Denna lyssnare körs ALLTID och direkt
-    window.addEventListener("mousedown", (e) => {
-        if(gameActive && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
-            performJump();
-        }
+    // --- REAKTION PÅ INPUT ---
+    window.addEventListener("mousedown", (e) => { 
+        if(gameActive && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') jumpAction(); 
     });
-    window.addEventListener("touchstart", (e) => {
-        if(gameActive && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
-            e.preventDefault(); performJump();
-        }
+    window.addEventListener("touchstart", (e) => { 
+        if(gameActive && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') { 
+            e.preventDefault(); jumpAction(); 
+        } 
     }, {passive: false});
 
     window.startGame = function() {
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if(isMobile) volumeSlider.value = 0.1;
         resize(); gameActive = true; transitioning = false;
         document.getElementById("start-menu").style.display = "none";
         document.getElementById("level-menu").style.display = "none";
         triggerWow();
-        gameMusic.src = currentMusicFile; gameMusic.volume = volumeSlider.value; gameMusic.play(); 
+        gameMusic.src = currentMusicFile; 
+        gameMusic.volume = volumeSlider.value; // Startar på 0.1 enligt sliderns värde
+        gameMusic.play(); 
     }
 
     window.nextLevelBtn = function() { currentLevel++; itemsCollected = 0; startGame(); };
@@ -187,31 +187,34 @@
                 bgScroll -= speed * 0.5; if(bgScroll <= -w) bgScroll = 0;
                 ctx.drawImage(bg, bgScroll, 0, w, h); ctx.drawImage(bg, bgScroll + w, 0, w, h);
             }
-            player.velocityY += player.gravity; player.y += player.velocityY;
-            if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
-            spawnTimer++;
-            if(spawnTimer > 50) {
-                let imgSet = assets.items['lvl'+currentLevel];
-                if(imgSet) {
-                    let isGold = Math.random() < 0.05;
-                    let isRandomBig = Math.random() < 0.15;
-                    let targetImg = isGold ? assets.gold : imgSet[Math.floor(Math.random()*3)];
-                    let sW = (isGold || isRandomBig) ? itemSize * 2 : itemSize;
-                    let ratio = targetImg.naturalHeight / targetImg.naturalWidth || 1;
-                    collectables.push({ x: w, y: groundY - (sW*ratio) - Math.random()*200, sW: sW, sH: sW*ratio, img: targetImg, isGold: isGold, isPaper: false, typeIdx: Math.floor(Math.random()*3), isBig: isRandomBig });
+            if(transitioning) {
+                player.x += 15; player.velocityY = 0;
+            } else {
+                player.velocityY += player.gravity; player.y += player.velocityY;
+                if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
+                spawnTimer++;
+                if(spawnTimer > 50) {
+                    let imgSet = assets.items['lvl'+currentLevel];
+                    if(imgSet) {
+                        let isGold = Math.random() < 0.05;
+                        let isRandomBig = Math.random() < 0.15;
+                        let typeIdx = Math.floor(Math.random()*3);
+                        let targetImg = isGold ? assets.gold : imgSet[typeIdx];
+                        let sW = (isGold || isRandomBig) ? itemSize * 2 : itemSize;
+                        let ratio = targetImg.naturalHeight / targetImg.naturalWidth || 1;
+                        collectables.push({ x: w, y: groundY - (sW*ratio) - Math.random()*200, sW: sW, sH: sW*ratio, img: targetImg, isGold: isGold, isPaper: false, typeIdx: typeIdx, isBig: isRandomBig });
+                    }
+                    spawnTimer = 0;
                 }
-                spawnTimer = 0;
             }
         }
 
         for(let i = collectables.length - 1; i >= 0; i--) {
             let c = collectables[i];
             if(currentLevel === 6) c.x += c.vx; else c.x -= (boostTimer > 0 ? bgSpeed * 2 : bgSpeed);
-            
-            if(player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
+            if(!transitioning && player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
                 if(c.isGold) { 
-                    playSound(sounds.yeah);
-                    triggerWow(player.x, player.y - 100);
+                    playSound(sounds.yeah); triggerWow(player.x, player.y - 100);
                     for(let g=0; g<40; g++) particles.push({x: c.x + c.sW/2, y: c.y + c.sH/2, vx: Math.random()*20-10, vy: Math.random()*20-10, s: Math.random()*8+2, c: '#f1c40f', l: 1.5, isGlitter: true });
                 } else if(c.isPaper) { 
                     hasPaperAmmo++; playSound(sounds.jump); 
@@ -230,7 +233,10 @@
                         }, 3500);
                     }
                     let goals = [30, 60, 90, 130, 180];
-                    if(itemsCollected >= goals[currentLevel-1]) { gameActive = false; transitioning = true; playSound(sounds.next); setTimeout(() => { document.getElementById("level-menu").style.display="flex"; }, 1000); }
+                    if(itemsCollected >= goals[currentLevel-1]) { 
+                        transitioning = true; playSound(sounds.next); 
+                        setTimeout(() => { gameActive = false; document.getElementById("level-menu").style.display="flex"; }, 1500); 
+                    }
                 }
                 collectables.splice(i, 1);
             }
