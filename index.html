@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: NO MOBILE MUSIC EDITION</title>
+    <title>Skate-bajsen: LEVEL CLICK EDITION</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; transition: background-color 0.5s; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -65,9 +65,7 @@
 </div>
 
 <script>
-    // Kolla om enheten är mobil
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
     const volumeSlider = document.getElementById("volume-slider"), gameUI = document.getElementById("game-ui"), progressFill = document.getElementById("progress-bar-fill"), scoreText = document.getElementById("score-text"), introDiv = document.getElementById("level-intro"), introBox = document.getElementById("level-intro-box"), startMenu = document.getElementById("start-menu");
 
@@ -95,21 +93,21 @@
     };
     let gameMusic = new Audio(); gameMusic.loop = true;
 
+    function unlockAudio() {
+        Object.values(sounds).forEach(s => {
+            if(Array.isArray(s)) s.forEach(a => { a.muted=true; a.play().then(()=>{a.pause(); a.muted=false; a.currentTime=0;}); });
+            else { s.muted=true; s.play().then(()=>{s.pause(); s.muted=false; s.currentTime=0;}); }
+        });
+        if(!isMobile) gameMusic.play().then(()=>gameMusic.pause()).catch(()=>{});
+    }
+
     function applySafeVolume() {
         const v = parseFloat(volumeSlider.value);
-        if(!isMobile) gameMusic.volume = v; // Bara musikvolym på PC
+        if(!isMobile) gameMusic.volume = v;
         Object.values(sounds).forEach(s => {
             if(Array.isArray(s)) s.forEach(a => a.volume = Math.min(v * 3, 0.5));
             else s.volume = Math.min(v * 3, 0.5);
         });
-    }
-
-    function unlockAudio() {
-        Object.values(sounds).forEach(s => {
-            if(Array.isArray(s)) { s.forEach(a => { a.muted=true; a.play().then(()=>{a.pause(); a.muted=false; a.currentTime=0;}); }); }
-            else { s.muted=true; s.play().then(()=>{s.pause(); s.muted=false; s.currentTime=0;}); }
-        });
-        if(!isMobile) gameMusic.play().then(()=>gameMusic.pause()).catch(()=>{});
     }
 
     volumeSlider.addEventListener('input', applySafeVolume);
@@ -130,7 +128,11 @@
 
     function selectLevel(n) { 
         unlockAudio();
-        currentLevel = n; sounds.lvlBtn.play(); 
+        // SPELA LEVELBUTTON.MP3
+        sounds.lvlBtn.currentTime = 0;
+        sounds.lvlBtn.play();
+        
+        currentLevel = n;
         document.getElementById("menu-lvl-text").innerText = levelData[n-1].name;
         document.body.style.backgroundColor = levelData[n-1].bg;
         document.querySelectorAll('.lvl-btn').forEach((b,i)=>b.classList.toggle('active', i===n-1)); 
@@ -144,12 +146,9 @@
         introBox.innerText = levelData[currentLevel-1].name;
         introBox.style.backgroundColor = levelData[currentLevel-1].color;
         collectables = []; itemsCollected = 0; boostTimer = 0; player.x = w * 0.2;
-        
         setTimeout(() => {
             introDiv.style.display = "none"; gameActive = true;
             if(currentLevel < 6) { gameUI.style.display = "block"; updateUI(); } else { gameUI.style.display = "none"; bossHealth = 200; }
-            
-            // MUSIK LOGIK: Endast på PC
             if(!isMobile) {
                 gameMusic.src = currentLevel === 1 ? 'music.mp3' : `music${currentLevel}.mp3`; 
                 gameMusic.volume = parseFloat(volumeSlider.value);
@@ -171,11 +170,7 @@
         sounds.mega.currentTime = 0; sounds.mega.play();
         setTimeout(() => {
             for(let j=0; j<120; j++) {
-                particles.push({ 
-                    x: player.x+playerSize/2, y: player.y+playerSize/2, 
-                    vx: Math.random()*20-10, vy: Math.random()*-15-5, 
-                    c: '#8B4513', l: 2.5, grav: 1.2 
-                });
+                particles.push({ x: player.x+playerSize/2, y: player.y+playerSize/2, vx: Math.random()*20-10, vy: Math.random()*-15-5, c: '#8B4513', l: 2.5, grav: 1.2 });
             }
         }, 3600);
     }
