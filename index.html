@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: THE REVENGE</title>
+    <title>Skate-bajsen: THE FINAL STABLE</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -136,7 +136,7 @@
                 }
             }
             if(bossHealth <= 0) { gameActive = false; stopAllAudio(); setTimeout(()=>winAudio.play(), 100); document.getElementById("win-screen").style.display="flex"; }
-            spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bX, y: bY+100, isPaper: true, vx: -12, sW: 60, sH: 60, hasPlayedSound: false}); spawnTimer = 0; }
+            spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bX, y: bY+100, isPaper: true, vx: -12, sW: 60, sH: 60, soundDone: false}); spawnTimer = 0; }
         } else {
             let speed = boostTimer > 0 ? bgSpeed*2.5 : bgSpeed; if(boostTimer > 0) boostTimer--;
             if(bg.complete) { bgScroll -= speed*0.5; if(bgScroll <= -w) bgScroll = 0; ctx.drawImage(bg, bgScroll, 0, w, h); ctx.drawImage(bg, bgScroll+w, 0, w, h); }
@@ -151,7 +151,7 @@
                         let target = isG ? assets.gold : set[type];
                         let ratio = target.naturalWidth / target.naturalHeight;
                         let size = (isG || isB) ? itemSizeBase*1.8 : itemSizeBase;
-                        collectables.push({ x: w, y: groundY-size-Math.random()*250, sW: size*ratio, sH: size, img: target, isG, isB, typeIdx: type, hasPlayedSound: false });
+                        collectables.push({ x: w, y: groundY-size-Math.random()*250, sW: size*ratio, sH: size, img: target, isG, isB, typeIdx: type, soundDone: false });
                     }
                     spawnTimer = 0;
                 }
@@ -161,12 +161,15 @@
         for(let i = collectables.length - 1; i >= 0; i--) {
             let c = collectables[i]; c.x += (currentLevel === 6 ? c.vx : -(boostTimer > 0 ? bgSpeed * 2.5 : bgSpeed));
             if(!transitioning && player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                // EXKLUSIV OCH SÄKRAD CHOKLAD-TRIGG
-                if(currentLevel === 2 && !c.isG && !c.isPaper && !c.hasPlayedSound) { 
-                    c.hasPlayedSound = true; sounds.choklad.currentTime = 0; sounds.choklad.play(); 
+                // CHOCO FIX: Kolla soundDone flaggan och flytta objektet direkt
+                if(currentLevel === 2 && !c.isG && !c.isPaper && !c.soundDone) { 
+                    c.soundDone = true; 
+                    sounds.choklad.currentTime = 0; 
+                    sounds.choklad.play(); 
+                    c.x = -2000; // Flytta bort objektet omedelbart
                 }
-                if(c.isG) { sounds.yeah.play(); for(let g=0; g<40; g++) particles.push({x: c.x, y: c.y, vx: Math.random()*25-12.5, vy: Math.random()*25-12.5, s: Math.random()*8, c: '#f1c40f', l: 1 }); }
-                else if(c.isPaper) { hasPaperAmmo++; sounds.jump.play(); }
+                if(c.isG) { sounds.yeah.play(); for(let g=0; g<40; g++) particles.push({x: player.x, y: player.y, vx: Math.random()*25-12.5, vy: Math.random()*25-12.5, s: Math.random()*8, c: '#f1c40f', l: 1 }); }
+                else if(c.isPaper) { hasPaperAmmo++; playSound(sounds.jump); }
                 else {
                     if(c.isB) triggerWow(player.x, player.y-100);
                     itemsCollected++;
@@ -179,7 +182,7 @@
                 collectables.splice(i, 1);
             }
             else if(c.x < -300 || c.x > w + 300) collectables.splice(i, 1);
-            if(c.img) ctx.drawImage(c.img, c.x, c.y, c.sW, c.sH);
+            if(c.img && c.x > -500) ctx.drawImage(c.img, c.x, c.y, c.sW, c.sH);
             else if(c.isPaper) ctx.drawImage(assets.paper, c.x, c.y, 60, 60);
         }
 
@@ -194,7 +197,8 @@
     function resize() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; groundY = h*0.75; playerSize = h*0.25; itemSizeBase = playerSize*0.65; player.x = w*0.22; player.y = groundY-playerSize; }
     function checkOrientation() { if (window.innerHeight > window.innerWidth) document.getElementById('orientation-overlay').style.display = 'flex'; else { document.getElementById('orientation-overlay').style.display = 'none'; resize(); } }
     window.addEventListener('resize', checkOrientation);
-    window.addEventListener("keydown", (e) => { if(e.code === "Space" && gameActive) { e.preventDefault(); if(!player.isJumping) { player.velocityY = player.jumpPower; player.isJumping = true; sounds.fart[Math.floor(Math.random()*3)].play(); } else if(currentLevel===6 && hasPaperAmmo>0) { hasPaperAmmo--; projectile={x:player.x, y:player.y}; playerRotation+=360; } } });
+    window.addEventListener("keydown", (e) => { if(e.code === "Space" && gameActive) { e.preventDefault(); if(!player.isJumping) { player.velocityY = player.jumpPower; player.isJumping = true; playSound(sounds.fart[Math.floor(Math.random()*3)]); } else if(currentLevel===6 && hasPaperAmmo>0) { hasPaperAmmo--; projectile={x:player.x, y:player.y}; playerRotation+=360; } } });
+    function playSound(s) { if(!gameActive) return; s.currentTime = 0; s.volume = 1.0; s.play().catch(()=>{}); }
     checkOrientation(); gameLoop();
 </script>
 </body>
