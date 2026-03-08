@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: LEVEL CLICK EDITION</title>
+    <title>Skate-bajsen: SILENT MOBILE EDITION</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; transition: background-color 0.5s; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -65,13 +65,13 @@
 </div>
 
 <script>
+    // Mobil-check
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-    const volumeSlider = document.getElementById("volume-slider"), gameUI = document.getElementById("game-ui"), progressFill = document.getElementById("progress-bar-fill"), scoreText = document.getElementById("score-text"), introDiv = document.getElementById("level-intro"), introBox = document.getElementById("level-intro-box"), startMenu = document.getElementById("start-menu");
+    const volumeSlider = document.getElementById("volume-slider"), startMenu = document.getElementById("start-menu");
 
-    let w, h, groundY, playerSize, itemSizeBase, gameActive = false, currentLevel = 1, itemsCollected = 0, bgScroll = 0, screenShake = 0, spawnTimer = 0, boostTimer = 0, isEndingLevel = false, pipeTimer = 0, projectile = null, bossHealth = 200, hasPaperAmmo = 0, winPlayed = false;
-    
     let player = { x: 0, y: 0, vY: 0, grav: 0.8, jump: -18, isJumping: false, rot: 0 };
+    let currentLevel = 1, gameActive = false, itemsCollected = 0, bgScroll = 0, screenShake = 0, spawnTimer = 0, boostTimer = 0, isEndingLevel = false, pipeTimer = 0, projectile = null, bossHealth = 200, hasPaperAmmo = 0, winPlayed = false;
     let collectables = [], particles = [];
 
     const levelGoals = [30, 35, 40, 40, 50];
@@ -93,14 +93,6 @@
     };
     let gameMusic = new Audio(); gameMusic.loop = true;
 
-    function unlockAudio() {
-        Object.values(sounds).forEach(s => {
-            if(Array.isArray(s)) s.forEach(a => { a.muted=true; a.play().then(()=>{a.pause(); a.muted=false; a.currentTime=0;}); });
-            else { s.muted=true; s.play().then(()=>{s.pause(); s.muted=false; s.currentTime=0;}); }
-        });
-        if(!isMobile) gameMusic.play().then(()=>gameMusic.pause()).catch(()=>{});
-    }
-
     function applySafeVolume() {
         const v = parseFloat(volumeSlider.value);
         if(!isMobile) gameMusic.volume = v;
@@ -110,28 +102,16 @@
         });
     }
 
-    volumeSlider.addEventListener('input', applySafeVolume);
-
-    const assets = { player: new Image(), boss: new Image(), paper: new Image(), fire: new Image(), gold: new Image(), bg: [], items: {} };
-    assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png'; assets.fire.src = 'fire_sprite.png'; assets.gold.src = 'gold_poop.png';
-    for(let i=1; i<=6; i++) { let img = new Image(); img.src = `pixel_background${i}.png`; assets.bg.push(img); }
-
-    function loadLvl(l, i1, i2, i3) {
-        assets.items['lvl'+l] = [new Image(), new Image(), new Image()];
-        assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3;
+    function unlockAudio() {
+        Object.values(sounds).forEach(s => {
+            if(Array.isArray(s)) s.forEach(a => { a.muted=true; a.play().then(()=>{a.pause(); a.muted=false; a.currentTime=0;}); });
+            else { s.muted=true; s.play().then(()=>{s.pause(); s.muted=false; s.currentTime=0;}); }
+        });
     }
-    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png');
-    loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png');
-    loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png');
-    loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png');
-    loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
 
     function selectLevel(n) { 
         unlockAudio();
-        // SPELA LEVELBUTTON.MP3
-        sounds.lvlBtn.currentTime = 0;
-        sounds.lvlBtn.play();
-        
+        sounds.lvlBtn.currentTime = 0; sounds.lvlBtn.play();
         currentLevel = n;
         document.getElementById("menu-lvl-text").innerText = levelData[n-1].name;
         document.body.style.backgroundColor = levelData[n-1].bg;
@@ -142,28 +122,25 @@
 
     function loadLevelSequence() {
         gameActive = false; isEndingLevel = false;
-        introDiv.style.display = "flex";
-        introBox.innerText = levelData[currentLevel-1].name;
-        introBox.style.backgroundColor = levelData[currentLevel-1].color;
+        document.getElementById("level-intro").style.display = "flex";
+        document.getElementById("level-intro-box").innerText = levelData[currentLevel-1].name;
+        document.getElementById("level-intro-box").style.backgroundColor = levelData[currentLevel-1].color;
         collectables = []; itemsCollected = 0; boostTimer = 0; player.x = w * 0.2;
+        
         setTimeout(() => {
-            introDiv.style.display = "none"; gameActive = true;
-            if(currentLevel < 6) { gameUI.style.display = "block"; updateUI(); } else { gameUI.style.display = "none"; bossHealth = 200; }
+            document.getElementById("level-intro").style.display = "none"; gameActive = true;
+            document.getElementById("game-ui").style.display = (currentLevel < 6 ? "block" : "none");
+            
+            // TOTAL MUSIK-BLOCKERING FÖR MOBIL
             if(!isMobile) {
                 gameMusic.src = currentLevel === 1 ? 'music.mp3' : `music${currentLevel}.mp3`; 
                 gameMusic.volume = parseFloat(volumeSlider.value);
                 gameMusic.play().catch(()=>{});
+            } else {
+                gameMusic.pause();
+                gameMusic.src = ""; // Tar bort ljudfilen helt
             }
         }, 1500);
-    }
-
-    function updateUI() { if(currentLevel < 6) { const goal = levelGoals[currentLevel-1]; scoreText.innerText = `POÄNG: ${itemsCollected} / ${goal}`; progressFill.style.width = (itemsCollected / goal * 100) + "%"; } }
-
-    function handleJump() {
-        if(!gameActive || isEndingLevel) return;
-        applySafeVolume();
-        if(!player.isJumping) { player.vY = player.jump; player.isJumping = true; sounds.fart[Math.floor(Math.random()*3)].play(); }
-        else if(currentLevel === 6 && hasPaperAmmo > 0) { hasPaperAmmo--; projectile = {x: player.x, y: player.y}; player.rot += 360; }
     }
 
     function spawnPoopFest() {
@@ -218,11 +195,14 @@
                 else if(c.isP) { hasPaperAmmo++; sounds.jump.play(); }
                 else {
                     if(currentLevel === 2 && c.img.src.includes('candy1.png')) sounds.choklad.play();
-                    itemsCollected++; updateUI();
+                    itemsCollected++; 
+                    const goal = levelGoals[currentLevel-1];
+                    document.getElementById("score-text").innerText = `POÄNG: ${itemsCollected} / ${goal}`;
+                    document.getElementById("progress-bar-fill").style.width = (itemsCollected / goal * 100) + "%";
                     if(itemsCollected % 12 === 0) sounds.bra.play();
                     if(itemsCollected % 25 === 0) spawnPoopFest();
                     if((currentLevel === 3 && c.typeIdx === 1) || (currentLevel === 4 && c.typeIdx === 1) || (currentLevel === 5 && c.typeIdx === 0)) { boostTimer = 180; if(currentLevel===5 && c.typeIdx === 0) sounds.mjau.play(); }
-                    if(itemsCollected >= levelGoals[currentLevel-1]) { isEndingLevel = true; sounds.next.play(); }
+                    if(itemsCollected >= goal) { isEndingLevel = true; sounds.next.play(); }
                 }
                 collectables.splice(i, 1);
             } else if(c.x < -200) collectables.splice(i, 1);
@@ -236,11 +216,20 @@
         ctx.restore();
     }
 
+    const assets = { player: new Image(), boss: new Image(), paper: new Image(), fire: new Image(), gold: new Image(), bg: [], items: {} };
+    assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png'; assets.fire.src = 'fire_sprite.png'; assets.gold.src = 'gold_poop.png';
+    for(let i=1; i<=6; i++) { let img = new Image(); img.src = `pixel_background${i}.png`; assets.bg.push(img); }
+    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png');
+    loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png');
+    loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png');
+    loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png');
+    loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
+    function loadLvl(l, i1, i2, i3) { assets.items['lvl'+l] = [new Image(), new Image(), new Image()]; assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3; }
+
     function resize() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; groundY = h*0.75; playerSize = h*0.25; itemSizeBase = playerSize*0.65; if(!isEndingLevel) player.x = w*0.2; player.y = groundY-playerSize; }
-    function checkOrientation() { document.getElementById('orientation-overlay').style.display = (window.innerHeight > window.innerWidth) ? 'flex' : 'none'; resize(); }
-    window.addEventListener('touchstart', (e) => { if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') handleJump(); });
-    window.addEventListener('keydown', (e) => { if(e.code === "Space") handleJump(); });
-    window.addEventListener('resize', checkOrientation); checkOrientation(); gameLoop();
+    window.addEventListener('touchstart', (e) => { if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') { applySafeVolume(); if(!gameActive && !isEndingLevel) return; if(!player.isJumping) { player.vY = player.jump; player.isJumping = true; sounds.fart[Math.floor(Math.random()*3)].play(); } else if(currentLevel === 6 && hasPaperAmmo > 0) { hasPaperAmmo--; projectile = {x: player.x, y: player.y}; player.rot += 360; } } });
+    window.addEventListener('keydown', (e) => { if(e.code === "Space") { applySafeVolume(); if(!player.isJumping) { player.vY = player.jump; player.isJumping = true; sounds.fart[Math.floor(Math.random()*3)].play(); } else if(currentLevel === 6 && hasPaperAmmo > 0) { hasPaperAmmo--; projectile = {x: player.x, y: player.y}; player.rot += 360; } } });
+    window.addEventListener('resize', resize); resize(); gameLoop();
 </script>
 </body>
 </html>
