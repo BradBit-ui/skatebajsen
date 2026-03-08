@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen: Final Fix</title>
+    <title>Skate-bajsen: Fixed Proportions</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
@@ -47,7 +47,7 @@
     </div>
 
     <div id="ui-layer">
-        <input type="range" id="volume-slider" min="0" max="0.5" step="0.01" value="0.2">
+        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
     </div>
 </div>
 
@@ -58,12 +58,9 @@
 
     let gameActive = false, transitioning = false, itemsCollected = 0, currentLevel = 1, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed = 7, bgScale, boostTimer = 0;
-    let gameStartTime = 0, currentSeconds = 0;
 
     // Boss & Halfpipe
     let bossHealth = 100, playerRotation = 0, pipeTimer = 0, hasPaperAmmo = 0, trickTextTimer = 0, projectile = null;
-
-    // Spelaren
     let player = { x: 0, y: 0, velocityY: 0, gravity: 0.8, jumpPower: -18, isJumping: false };
 
     const assets = {
@@ -91,11 +88,17 @@
         yeah: new Audio('yeah.m4a'), mega: new Audio('baaaajs.m4a'), next: new Audio('nextlevel.mp3')
     };
 
+    let gameMusic = new Audio();
+    gameMusic.loop = true;
+    let currentMusicFile = 'music.mp3';
+
     function playSound(s) { s.currentTime = 0; s.volume = volumeSlider.value; s.play().catch(()=>{}); }
 
     function selectLevel(num) {
         currentLevel = num;
         document.querySelectorAll('.lvl-btn').forEach((btn, i) => btn.classList.toggle('active', i === num-1));
+        currentMusicFile = (num === 5) ? 'music.mp3' : ['music.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3', 'music5.mp3', 'music6.mp3'][num-1];
+        gameMusic.src = currentMusicFile;
         playSound(sounds.button);
     }
 
@@ -127,12 +130,16 @@
 
     window.addEventListener("mousedown", jump);
     window.addEventListener("touchstart", (e) => { if(gameActive) { e.preventDefault(); jump(); } }, {passive: false});
-    window.addEventListener("keydown", (e) => { if(e.code === "Space") jump(); });
 
     function startGame() {
         resize(); gameActive = true; transitioning = false;
         startMenu.style.display = "none"; levelMenu.style.display = "none";
-        if(currentLevel === 1) { gameStartTime = Date.now(); itemsCollected = 0; }
+        
+        // Fixa musiken vid start
+        if(!gameMusic.src || gameMusic.src.includes('undefined')) gameMusic.src = currentMusicFile;
+        gameMusic.volume = volumeSlider.value;
+        gameMusic.play().catch(e => console.log("Musik start-blockad"));
+        
         playSound(sounds.wow);
     }
     document.getElementById("start-btn-menu").onclick = startGame;
@@ -176,26 +183,27 @@
             }
             player.velocityY += player.gravity; player.y += player.velocityY;
             if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
-            if(gameActive) currentSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
+            
             spawnTimer++;
             if(spawnTimer > 50) {
                 let imgSet = items['lvl'+currentLevel];
                 let isGold = Math.random() < 0.05;
                 if(imgSet) {
                     let idx = Math.floor(Math.random()*imgSet.length);
-                    collectables.push({ x: w, y: groundY - itemSize - Math.random()*(h*0.4), sW: isGold?itemSize*1.5:itemSize, sH: itemSize, typeIdx: idx, isGold: isGold });
+                    let targetImg = isGold ? assets.gold : imgSet[idx];
+                    let ratio = targetImg.naturalHeight / targetImg.naturalWidth || 1;
+                    collectables.push({ x: w, y: groundY - (itemSize * ratio) - Math.random()*(h*0.4), sW: isGold?itemSize*1.5:itemSize, sH: (isGold?itemSize*1.5:itemSize) * ratio, typeIdx: idx, isGold: isGold });
                 }
                 spawnTimer = 0;
             }
         }
 
-        // --- KOLLISION ---
         for(let i = collectables.length-1; i>=0; i--) {
             let c = collectables[i];
             if(currentLevel === 6) { c.x += c.vx; c.y += c.vy; } else { c.x -= (boostTimer > 0 ? bgSpeed * 2 : bgSpeed); }
             if(player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
                 if(c.isPaper) { hasPaperAmmo++; playSound(sounds.jump); }
-                else if(c.isGold) { playSound(sounds.yeah); gameStartTime += 5000; }
+                else if(c.isGold) { playSound(sounds.yeah); }
                 else {
                     itemsCollected++;
                     if(currentLevel === 5 && c.typeIdx === 0) playSound(sounds.mjau);
@@ -212,7 +220,6 @@
             if(c.x < -200 || c.x > w + 200) collectables.splice(i,1);
         }
 
-        // --- RITA ---
         collectables.forEach(c => {
             let img = c.isPaper ? assets.paper : (c.isGold ? assets.gold : items['lvl'+currentLevel][c.typeIdx]);
             if(img && img.complete) ctx.drawImage(img, c.x, c.y, c.sW, c.sH);
@@ -232,7 +239,7 @@
         if (gameActive) {
             ctx.fillStyle = "white"; ctx.font = "bold 20px Courier";
             if(currentLevel === 6) ctx.fillText(`🧻 AMMO: ${hasPaperAmmo} | HP: ${bossHealth}%`, 20, 40);
-            else ctx.fillText(`⏱️ ${currentSeconds}s | ✨ ${itemsCollected}`, 20, 40);
+            else ctx.fillText(`✨ ${itemsCollected}`, 20, 40);
         }
         requestAnimationFrame(gameLoop);
     }
