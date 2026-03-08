@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen: Yeah Edition</title>
+    <title>Skate-bajsen: Mega Bajsfest Edition</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
@@ -86,7 +86,6 @@
     const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
     const nextLevelSound = new Audio('nextlevel.mp3'), buttonSound = new Audio('button.mp3'), chokladSound = new Audio('choklad.m4a'), neighSound = new Audio('neigh.m4a');
     const superpruttSound = new Audio('superprutt.m4a');
-    // NYTT LJUD: YEAH!
     const yeahSound = new Audio('yeah.m4a');
 
     let audioCtx, gainNode, gameMusic, currentMusicFile = 'music.mp3';
@@ -189,7 +188,7 @@
                     if(c.isGold) {
                         gameStartTime += 5000;
                         for(let b=0; b<30; b++) particles.push({ x: c.x, y: c.y, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, s: 8, c: '#f1c40f', l: 1 });
-                        playSound(yeahSound); // TRIGGER YEAH!
+                        playSound(yeahSound);
                     } else {
                         itemsCollected++;
                         if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1)) {
@@ -199,9 +198,27 @@
                         if(currentLevel === 2 && c.typeIdx === 0) playSound(chokladSound);
                         if(currentLevel === 4 && c.typeIdx === 2) playSound(neighSound);
                         if(itemsCollected % 12 === 0) playSound(braJobbatSound);
+                        
+                        // BAJSFEST LOGIK
                         if(itemsCollected % 25 === 0) {
-                             playSound(megaBajsSound);
-                             setTimeout(() => { if (gameActive) { for(let b=0; b<50; b++) particles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*20, vy: (Math.random()-1)*20, s: 10, c: '#8B4513', l: 1 }); } }, 2000);
+                             // Fördröj ljud och partiklar med 3,5 sekunder (2000ms gammalt + 1500ms nytt)
+                             setTimeout(() => { 
+                                 if (gameActive) { 
+                                     playSound(megaBajsSound);
+                                     // Mer bajs! (50 gammalt -> 100 nytt)
+                                     for(let b=0; b<100; b++) {
+                                         particles.push({ 
+                                             x: player.x, 
+                                             y: player.y, 
+                                             vx: (Math.random()-0.5)*25, // Lite snabbare spridning
+                                             vy: (Math.random()-1)*25, 
+                                             s: Math.random()*12 + 2, // Varierad storlek
+                                             c: '#8B4513', 
+                                             l: Math.random() + 0.5 // Varierad livslängd
+                                         }); 
+                                     } 
+                                 } 
+                             }, 3500); 
                         }
                     }
                     let goal = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : 140;
@@ -228,11 +245,13 @@
             ctx.restore();
         });
 
+        // RITA ELD & SPELARE
         ctx.save();
         if (boostTimer > 0) {
             let fireW = playerSize * 0.95;
             let fireH = fireW * (assets.fire.naturalHeight / assets.fire.naturalWidth || 1);
-            ctx.drawImage(assets.fire, player.x - fireW * 1.05, player.y + playerSize * 0.45 - fireH / 2, fireW, fireH);
+            // ÄNDRING: Flyttat elden närmare (ändrat multipliceraren från -1.05 till -0.85)
+            ctx.drawImage(assets.fire, player.x - fireW * 0.85, player.y + playerSize * 0.45 - fireH / 2, fireW, fireH);
         }
         ctx.drawImage(assets.player, player.x, player.y, playerSize, playerSize);
         ctx.restore();
