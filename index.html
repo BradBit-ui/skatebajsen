@@ -3,63 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: TOTAL REPAIR EDITION</title>
+    <title>Skate-bajsen: THE RELIABLE EDITION</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
-        canvas { display: block; width: 100%; height: 100%; transition: background-color 0.1s; outline: none; }
-        
-        /* Fixad startsida */
-        #start-menu { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: radial-gradient(circle, #1a1a2e 0%, #000 100%); 
-            display: flex; flex-direction: column; justify-content: center; 
-            align-items: center; color: white; z-index: 100; text-align: center; 
-        }
-
-        @keyframes menuFloat {
-            0% { transform: translateY(0) rotate(-2deg); }
-            50% { transform: translateY(-20px) rotate(2deg); }
-            100% { transform: translateY(0) rotate(-2deg); }
-        }
+        canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; outline: none; }
+        #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a1a2e 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
+        @keyframes menuFloat { 0% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-20px) rotate(2deg); } 100% { transform: translateY(0) rotate(-2deg); } }
         .menu-sprite { height: 30vh; margin-bottom: 10px; animation: menuFloat 3s infinite ease-in-out; }
-
-        .menu-title { font-size: 45px; margin: 10px 0; text-shadow: 4px 4px 0px #000; }
-        .level-indicator { font-size: 24px; color: #f1c40f; margin-bottom: 20px; }
-
+        .menu-title { font-size: 45px; margin: 5px 0; text-shadow: 4px 4px 0px #000; text-transform: uppercase; }
+        .level-indicator { font-size: 24px; color: #f1c40f; margin-bottom: 15px; font-weight: bold; }
         #level-select-row { display: flex; gap: 10px; margin-bottom: 30px; z-index: 110; }
         .lvl-btn { width: 50px; height: 50px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; pointer-events: auto; }
         .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 20px #f1c40f; }
-
-        .game-btn-large { padding: 20px 50px; font-size: 28px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; pointer-events: auto; box-shadow: 0 8px 0 #d35400; }
-        .game-btn-large:active { transform: translateY(4px); box-shadow: 0 4px 0 #d35400; }
-
-        /* Party Slutscen */
-        #win-screen { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            display: none; flex-direction: column; justify-content: center; 
-            align-items: center; color: white; z-index: 500; text-align: center;
-            animation: discoBg 0.4s infinite;
-        }
-        @keyframes discoBg {
-            0% { background-color: rgba(255, 0, 0, 0.4); }
-            33% { background-color: rgba(0, 255, 0, 0.4); }
-            66% { background-color: rgba(0, 0, 255, 0.4); }
-        }
-        .winner-sprite { width: 250px; animation: victoryDance 0.5s infinite alternate ease-in-out; }
-        @keyframes victoryDance { from { transform: scale(1); } to { transform: scale(1.3); } }
-
-        #level-intro { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 200; color: white; font-size: 80px; }
-        #orientation-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #f1c40f; display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .game-btn-large { padding: 20px 50px; font-size: 28px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; box-shadow: 0 8px 0 #d35400; pointer-events: auto; }
+        #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 500; text-align: center; animation: discoBg 0.4s infinite; }
+        @keyframes discoBg { 0% { background-color: rgba(255,0,0,0.4); } 33% { background-color: rgba(0,255,0,0.4); } 66% { background-color: rgba(0,0,255,0.4); } }
+        #boss-instr { position: absolute; top: 20%; width: 100%; text-align: center; color: #f1c40f; font-size: 30px; font-weight: bold; z-index: 80; display: none; text-shadow: 2px 2px 5px #000; }
     </style>
 </head>
-<body onclick="canvas.focus()">
-
-<div id="orientation-overlay"><h1>VÄND PÅ MOBILEN</h1></div>
+<body>
 
 <div id="game-wrapper">
-    <canvas id="gameCanvas" tabindex="0"></canvas>
-    <div id="level-intro">LEVEL 1</div>
+    <div id="boss-instr">FÅNGA RULLEN - HOPPA FÖR ATT SKJUTA!</div>
+    <canvas id="gameCanvas"></canvas>
     
     <div id="start-menu">
         <img src="bajskorv_sprite.png" class="menu-sprite">
@@ -78,7 +45,7 @@
 
     <div id="win-screen">
         <h1 style="font-size: 50px; color: #f1c40f;">BOSSEN ÄR MOS!</h1>
-        <img src="bajskorv_sprite.png" class="winner-sprite">
+        <img src="bajskorv_sprite.png" style="width:250px; animation: menuFloat 0.5s infinite;">
         <h1 style="font-size: 60px;">PARTY-TID!</h1>
         <button class="game-btn-large" onclick="location.reload()">SPELA IGEN</button>
     </div>
@@ -86,80 +53,143 @@
 
 <script>
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-    let gameActive = false, currentLevel = 1, particles = [], screenShake = 0;
-    let bossHealth = 200, winPlayed = false;
-
+    let w, h, groundY, playerSize, itemSizeBase; // Definiera globalt
+    let gameActive = false, currentLevel = 1, itemsCollected = 0, bgScroll = 0, screenShake = 0;
+    let pipeTimer = 0, projectile = null, bossHealth = 200, hasPaperAmmo = 0, winPlayed = false, spawnTimer = 0;
+    
+    const levelGoals = [30, 35, 40, 40, 50];
     const sounds = {
-        button: new Audio('button.mp3'),
-        lvlBtn: new Audio('levelbutton.mp3'),
-        win: new Audio('win.mp3'),
-        wow: new Audio('wow.m4a'),
-        choklad: new Audio('choklad.m4a')
+        button: new Audio('button.mp3'), lvlBtn: new Audio('levelbutton.mp3'),
+        wow: new Audio('wow.m4a'), choklad: new Audio('choklad.m4a'),
+        win: new Audio('win.mp3'), jump: new Audio('superprutt.m4a'),
+        ouch: [new Audio('ouch.m4a'), new Audio('Aj.m4a'), new Audio('dinlilla.m4a')],
+        fart: new Audio('fart1.m4a')
     };
+    let gameMusic = new Audio(); gameMusic.loop = true;
+
+    const assets = { player: new Image(), boss: new Image(), paper: new Image(), bg: [], items: {} };
+    assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png';
+    for(let i=1; i<=6; i++) { let img = new Image(); img.src = `pixel_background${i}.png`; assets.bg.push(img); }
+
+    function loadLvl(l, i1, i2, i3) {
+        assets.items['lvl'+l] = [new Image(), new Image(), new Image()];
+        assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3;
+    }
+    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png');
+    loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png');
+    loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png');
+    loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png');
+    loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
+
+    let player = { x: 0, y: 0, vY: 0, grav: 0.8, jump: -18, isJumping: false, rot: 0 };
+    let collectables = [], particles = [];
+
+    function resize() { 
+        w = window.innerWidth; h = window.innerHeight; 
+        canvas.width = w; canvas.height = h; 
+        groundY = h * 0.75; playerSize = h * 0.25; itemSizeBase = playerSize * 0.65;
+        player.x = w * 0.2; player.y = groundY - playerSize;
+    }
 
     function selectLevel(n) {
-        currentLevel = n;
-        sounds.lvlBtn.currentTime = 0;
-        sounds.lvlBtn.play().catch(()=>{});
+        currentLevel = n; sounds.lvlBtn.currentTime = 0; sounds.lvlBtn.play();
         document.getElementById("menu-lvl-text").innerText = n === 6 ? "BOSS FIGHT" : "LEVEL " + n;
         document.querySelectorAll('.lvl-btn').forEach((b,i)=>b.classList.toggle('active', i===n-1));
     }
 
     function startGame() {
-        sounds.button.play().catch(()=>{});
+        resize(); // Säkerställ storlek innan start
+        sounds.button.play();
         document.getElementById("start-menu").style.display = "none";
-        const intro = document.getElementById("level-intro");
-        intro.style.display = "flex";
-        intro.innerText = currentLevel === 6 ? "BOSS FIGHT!" : "LEVEL " + currentLevel;
-        
-        setTimeout(() => {
-            intro.style.display = "none";
-            gameActive = true;
-            resize();
-            sounds.wow.play().catch(()=>{});
-        }, 1500);
-    }
-
-    function createFirework(x, y) {
-        for(let i=0; i<30; i++) {
-            particles.push({
-                x: x, y: y,
-                vx: Math.random()*16-8, vy: Math.random()*16-8,
-                s: Math.random()*8+2,
-                c: `hsl(${Math.random()*360}, 100%, 50%)`,
-                l: 1.0
-            });
+        gameActive = true; winPlayed = false; itemsCollected = 0; bossHealth = 200;
+        gameMusic.src = `music${currentLevel === 1 ? '' : currentLevel}.mp3`;
+        gameMusic.play(); sounds.wow.play();
+        if(currentLevel === 6) {
+            document.getElementById("boss-instr").style.display = "block";
+            setTimeout(()=>document.getElementById("boss-instr").style.display="none", 4000);
         }
     }
 
     function gameLoop() {
         requestAnimationFrame(gameLoop);
-        if (!gameActive) return;
+        if(!gameActive) return;
 
-        ctx.clearRect(0, 0, w, h);
-        
-        if(currentLevel === 6 && bossHealth <= 0 && !winPlayed) {
-            winPlayed = true;
-            gameActive = false;
-            document.getElementById("win-screen").style.display = "flex";
-            sounds.win.play().catch(()=>{});
-            setInterval(() => createFirework(Math.random()*w, Math.random()*h), 250);
+        ctx.save();
+        if(screenShake > 0) { ctx.translate(Math.random()*screenShake-screenShake/2, Math.random()*screenShake-screenShake/2); screenShake *= 0.9; }
+        ctx.clearRect(0,0,w,h);
+
+        let bg = assets.bg[currentLevel-1];
+        if(currentLevel < 6) {
+            bgScroll -= 4; if(bgScroll <= -w) bgScroll = 0;
+            if(bg.complete) { ctx.drawImage(bg, bgScroll, 0, w, h); ctx.drawImage(bg, bgScroll+w, 0, w, h); }
+            
+            player.vY += player.grav; player.y += player.vY;
+            if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.vY = 0; player.isJumping = false; }
+            
+            spawnTimer++;
+            if(spawnTimer > 50) {
+                let set = assets.items['lvl'+currentLevel];
+                let img = set[Math.floor(Math.random()*3)];
+                if(img.complete) {
+                    let ratio = img.naturalWidth / img.naturalHeight;
+                    collectables.push({ x: w, y: groundY - itemSizeBase - Math.random()*200, sW: itemSizeBase*ratio, sH: itemSizeBase, img: img, done: false });
+                }
+                spawnTimer = 0;
+            }
+        } else {
+            pipeTimer += 0.025; player.x = (w/2-playerSize/2) + Math.sin(pipeTimer)*(w*0.38);
+            let curG = groundY - Math.pow((player.x - (w/2-playerSize/2))/(w*0.38), 2)*160;
+            player.vY += player.grav; player.y += player.vY;
+            if(player.y > curG - playerSize) { player.y = curG - playerSize; player.vY = 0; player.isJumping = false; }
+            if(bg.complete) ctx.drawImage(bg, 0, 0, w, h);
+            
+            let bX = w*0.75, bY = h*0.2 + Math.sin(Date.now()*0.003)*40;
+            ctx.save(); ctx.filter = 'sepia(1) saturate(10) hue-rotate(-50deg)';
+            ctx.drawImage(assets.boss, bX, bY, playerSize*1.8, playerSize*1.8); ctx.restore();
+            
+            ctx.fillStyle = "red"; ctx.fillRect(bX, bY-30, playerSize*1.8, 15);
+            ctx.fillStyle = "lime"; ctx.fillRect(bX, bY-30, (bossHealth/200)*(playerSize*1.8), 15);
+
+            if(projectile) {
+                projectile.x += 15; ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
+                if(projectile.x > bX && projectile.x < bX+200 && projectile.y > bY && projectile.y < bY+200) {
+                    bossHealth -= 20; screenShake = 20; projectile = null;
+                    let s = sounds.ouch[Math.floor(Math.random()*3)]; s.volume = 1.0; s.currentTime = 0; s.play();
+                } else if(projectile.x > w) projectile = null;
+            }
+            if(bossHealth <= 0 && !winPlayed) {
+                winPlayed = true; gameActive = false; gameMusic.pause(); sounds.win.play();
+                document.getElementById("win-screen").style.display = "flex";
+                setInterval(() => { for(let i=0;i<20;i++) particles.push({x:Math.random()*w, y:Math.random()*h, vx:Math.random()*10-5, vy:Math.random()*10-5, c:`hsl(${Math.random()*360},100%,50%)`, l:1}); }, 200);
+            }
+            spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bX, y: bY+100, isP: true, vx: -10, sW: 60, sH: 60}); spawnTimer = 0; }
         }
 
-        particles.forEach((p, i) => {
-            p.x += p.vx; p.y += p.vy; p.l -= 0.02;
-            ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI*2); ctx.fill();
-            if(p.l <= 0) particles.splice(i, 1);
-        });
-        ctx.globalAlpha = 1;
+        for(let i = collectables.length - 1; i >= 0; i--) {
+            let c = collectables[i]; c.x += (c.vx || -7);
+            if(player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
+                if(currentLevel === 2 && c.img && c.img.src.endsWith('candy1.png') && !c.done) { c.done = true; sounds.choklad.currentTime = 0; sounds.choklad.play(); c.x = -2000; }
+                if(c.isP) { hasPaperAmmo++; sounds.jump.play(); }
+                else { itemsCollected++; if(itemsCollected >= levelGoals[currentLevel-1]) { gameActive = false; document.getElementById("start-menu").style.display = "flex"; } }
+                collectables.splice(i, 1);
+            } else if(c.x < -200) collectables.splice(i, 1);
+            if(c.img) ctx.drawImage(c.img, c.x, c.y, c.sW, c.sH); else ctx.drawImage(assets.paper, c.x, c.y, 60, 60);
+        }
+
+        ctx.save(); ctx.translate(player.x+playerSize/2, player.y+playerSize/2); ctx.rotate(player.rot*Math.PI/180);
+        ctx.drawImage(assets.player, -playerSize/2, -playerSize/2, playerSize, playerSize); ctx.restore();
+
+        particles.forEach((p, i) => { p.x+=p.vx; p.y+=p.vy; p.l-=0.02; ctx.globalAlpha=p.l; ctx.fillStyle=p.c; ctx.fillRect(p.x,p.y,10,10); if(p.l<=0) particles.splice(i,1); });
+        ctx.restore();
     }
 
-    function resize() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; }
-    window.addEventListener('resize', resize);
-    window.addEventListener('keydown', (e) => { if(e.key === 'k') bossHealth = 0; }); // Fuskkod för att testa party
-    resize();
-    gameLoop();
+    window.addEventListener('keydown', (e) => { 
+        if(e.code === "Space" && gameActive) {
+            if(!player.isJumping) { player.vY = player.jump; player.isJumping = true; sounds.fart.play(); }
+            else if(currentLevel === 6 && hasPaperAmmo > 0) { hasPaperAmmo--; projectile = {x: player.x, y: player.y}; player.rot += 360; }
+        }
+    });
+    window.addEventListener('resize', resize); resize(); gameLoop();
 </script>
 </body>
 </html>
