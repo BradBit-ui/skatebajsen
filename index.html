@@ -3,14 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: THE STABLE AUDIO CUT</title>
+    <title>Skate-bajsen: ORIENTATION FIX</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
         canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; touch-action: none; outline: none; }
-        #start-menu, #level-menu, #win-screen, #level-intro { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
+        
+        /* Orientation Warning */
+        #orientation-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; color: #f1c40f; display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 1000; text-align: center;
+        }
+
+        #start-menu, #level-menu, #win-screen, #level-intro { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; 
+        }
         #win-screen { background: radial-gradient(circle, rgba(241,196,15,0.3) 0%, rgba(0,0,0,0.98) 80%); }
-        @keyframes victoryDance { 0% { transform: translateY(0) rotate(0deg) scale(1.2); } 25% { transform: translateY(-40px) rotate(10deg) scale(1.3); } 50% { transform: translateY(0) rotate(0deg) scale(1.2); } 75% { transform: translateY(-40px) rotate(10deg) scale(1.3); } 100% { transform: translateY(0) rotate(0deg) scale(1.2); } }
+        @keyframes victoryDance { 0% { transform: translateY(0) rotate(0deg) scale(1.2); } 25% { transform: translateY(-40px) rotate(10deg) scale(1.3); } 50% { transform: translateY(0) rotate(0deg) scale(1.2); } 75% { transform: translateY(-40px) rotate(-10deg) scale(1.3); } 100% { transform: translateY(0) rotate(0deg) scale(1.2); } }
         .winner-sprite { width: 250px; margin-bottom: 30px; animation: victoryDance 0.5s infinite ease-in-out; filter: drop-shadow(0 0 20px #f1c40f); }
         .victory-title { font-size: 80px; color: #f1c40f; margin: 0; text-shadow: 4px 4px 0px #d35400; }
         .game-btn-large { padding: 25px 60px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 30px; }
@@ -22,6 +34,11 @@
     </style>
 </head>
 <body onclick="canvas.focus()">
+
+<div id="orientation-overlay">
+    <h1 style="font-size: 40px;">VÄND PÅ MOBILEN</h1>
+    <p style="font-size: 20px;">FÖR ATT SKJUTA BAJS OCH SKATEA! 💩🛹</p>
+</div>
 
 <div id="game-wrapper">
     <canvas id="gameCanvas" tabindex="0"></canvas>
@@ -55,7 +72,7 @@
     let gameActive = false, transitioning = false, itemsCollected = 0, currentLevel = 1, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed = 7, boostTimer = 0;
     let bossHealth = 200, maxBossHealth = 200, hasPaperAmmo = 0, pipeTimer = 0, projectile = null, playerRotation = 0;
-    let bossHitTimer = 0, winPlayed = false, chocoPlaying = false; // Choco-skydd
+    let bossHitTimer = 0, winPlayed = false, chocoPlaying = false;
     const levelGoals = [30, 35, 40, 40, 50];
     let player = { x: 0, y: 0, velocityY: 0, gravity: 0.8, jumpPower: -18, isJumping: false };
 
@@ -71,18 +88,29 @@
     let gameMusic = new Audio(); gameMusic.loop = true;
     let currentMusicFile = 'music.mp3';
 
-    // Förhindra choklad-loop
+    // Orienterings-kontroll
+    function checkOrientation() {
+        if (window.innerHeight > window.innerWidth) {
+            document.getElementById('orientation-overlay').style.display = 'flex';
+        } else {
+            document.getElementById('orientation-overlay').style.display = 'none';
+            resize();
+        }
+    }
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('load', checkOrientation);
+
     function playChoco() {
-        if (chocoPlaying) return;
+        if (chocoPlaying || !gameActive) return;
         chocoPlaying = true;
         sounds.choklad.currentTime = 0;
         sounds.choklad.play().then(() => {
-            setTimeout(() => { chocoPlaying = false; }, 200); // Lås ljudet i 200ms
+            setTimeout(() => { chocoPlaying = false; }, 200);
         }).catch(() => { chocoPlaying = false; });
     }
 
     function stopAllAudio() {
-        gameMusic.pause(); gameMusic.currentTime = 0;
+        gameMusic.pause(); gameMusic.currentTime = 0; gameMusic.src = "";
         Object.keys(sounds).forEach(key => {
             if (Array.isArray(sounds[key])) { sounds[key].forEach(s => { s.pause(); s.currentTime = 0; }); } 
             else { sounds[key].pause(); sounds[key].currentTime = 0; }
@@ -154,7 +182,7 @@
 
     function gameLoop() {
         requestAnimationFrame(gameLoop);
-        if (!gameActive) return; // SPÄRR
+        if (!gameActive) return;
 
         ctx.clearRect(0, 0, w, h);
         let bg = assets.bg[currentLevel-1];
@@ -200,9 +228,7 @@
         for(let i = collectables.length - 1; i >= 0; i--) {
             let c = collectables[i]; c.x += (currentLevel === 6 ? c.vx : -(boostTimer > 0 ? bgSpeed * 2.5 : bgSpeed));
             if(!transitioning && player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                // CHOCO FIX: Använd den nya säkrade funktionen
                 if(currentLevel === 2 && !c.isGold && !c.isPaper) playChoco();
-                
                 if(c.isGold) { playSound(sounds.yeah); for(let g=0; g<50; g++) particles.push({x: c.x+c.sW/2, y: c.y+c.sH/2, vx: Math.random()*25-12.5, vy: Math.random()*25-12.5, s: Math.random()*10+2, c: '#f1c40f', l: 1.8, isGlitter: true }); }
                 else if(c.isPaper) { hasPaperAmmo++; playSound(sounds.jump); }
                 else {
@@ -229,7 +255,7 @@
         ctx.globalAlpha = 1;
         if (gameActive) { ctx.fillStyle = "white"; ctx.font = "bold 28px Courier"; if(currentLevel === 6) { ctx.fillText(`🧻 AMMO: ${hasPaperAmmo}`, 30, 50); } else { ctx.fillText(`✨ ${itemsCollected} / ${levelGoals[currentLevel-1]}`, 30, 50); } }
     }
-    resize(); gameLoop(); window.addEventListener("resize", resize);
+    checkOrientation(); gameLoop(); 
 </script>
 </body>
 </html>
