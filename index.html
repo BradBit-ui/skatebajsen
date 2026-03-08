@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen: Ultimate Kawaii Edition</title>
+    <title>Skate-bajsen: Dev Edition</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
@@ -17,7 +17,12 @@
         #start-menu, #level-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
         .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 20px; }
         
-        .highscore-box { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px; border: 2px dashed #f1c40f; margin-top: 20px; }
+        /* Level Selector Styling */
+        .level-selector { display: flex; gap: 10px; margin: 20px 0; }
+        .lvl-btn { width: 50px; height: 50px; background: #333; border: 3px solid #f1c40f; color: white; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+        .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 15px #f1c40f; }
+
+        .highscore-box { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px; border: 2px dashed #f1c40f; margin-top: 10px; }
         .highscore-title { color: #f1c40f; font-size: 14px; text-transform: uppercase; }
         .highscore-val { font-size: 28px; font-weight: bold; }
 
@@ -36,10 +41,22 @@
     
     <div id="start-menu">
         <h1>SKATE-BAJSEN</h1>
+        
         <div class="highscore-box">
             <div class="highscore-title">🏆 Snabbaste Tid</div>
             <div id="best-time-display" class="highscore-val">-- sek</div>
         </div>
+
+        <p style="margin-top: 20px; color: #f1c40f; font-weight: bold;">VÄLJ LEVEL:</p>
+        <div class="level-selector">
+            <div class="lvl-btn active" onclick="selectLevel(1)">1</div>
+            <div class="lvl-btn" onclick="selectLevel(2)">2</div>
+            <div class="lvl-btn" onclick="selectLevel(3)">3</div>
+            <div class="lvl-btn" onclick="selectLevel(4)">4</div>
+            <div class="lvl-btn" onclick="selectLevel(5)">5</div>
+            <div class="lvl-btn" onclick="selectLevel(6)">6</div>
+        </div>
+
         <button id="start-btn-menu" class="game-btn-large">LETS GO!</button>
     </div>
 
@@ -67,22 +84,25 @@
     document.getElementById("best-time-display").innerText = bestTime === Infinity ? "-- sek" : bestTime + " sek";
 
     const assets = {
-        bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), bg5: new Image(), player: new Image(), gold: new Image(), fire: new Image(),
+        bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), bg5: new Image(), bg6: new Image(), player: new Image(), gold: new Image(), fire: new Image(),
         items: {
             lvl1: [new Image(), new Image(), new Image()],
             lvl2: [new Image(), new Image(), new Image()],
             lvl3: [new Image(), new Image(), new Image()],
             lvl4: [new Image(), new Image(), new Image()],
-            lvl5: [new Image(), new Image(), new Image()]
+            lvl5: [new Image(), new Image(), new Image()],
+            lvl6: [new Image(), new Image(), new Image()]
         }
     };
-    assets.bg1.src = 'pixel_background.png'; assets.bg2.src = 'pixel_background2.png'; assets.bg3.src = 'pixel_background3.png'; assets.bg4.src = 'pixel_background4.png'; assets.bg5.src = 'pixel_background5.png';
+    assets.bg1.src = 'pixel_background.png'; assets.bg2.src = 'pixel_background2.png'; assets.bg3.src = 'pixel_background3.png'; assets.bg4.src = 'pixel_background4.png'; assets.bg5.src = 'pixel_background5.png'; assets.bg6.src = 'pixel_background6.png';
     assets.player.src = 'bajskorv_sprite.png'; assets.gold.src = 'gold_poop.png'; assets.fire.src = 'fire_sprite.png';
     assets.items.lvl1[0].src = 'unicorn_sprite.png'; assets.items.lvl1[1].src = 'star_sprite.png'; assets.items.lvl1[2].src = 'heart_sprite.png';
     assets.items.lvl2[0].src = 'candy1.png'; assets.items.lvl2[1].src = 'candy2.png'; assets.items.lvl2[2].src = 'candy3.png';
     assets.items.lvl3[0].src = 'zebra_sprite.png'; assets.items.lvl3[1].src = 'giraffe_sprite.png'; assets.items.lvl3[2].src = 'monkey_sprite.png';
     assets.items.lvl4[0].src = 'planet_sprite.png'; assets.items.lvl4[1].src = 'alien_sprite.png'; assets.items.lvl4[2].src = 'unicorn_sprite.png';
     assets.items.lvl5[0].src = 'kitten_sprite.png'; assets.items.lvl5[1].src = 'yarnball_sprite.png'; assets.items.lvl5[2].src = 'kitten_sprite2.png';
+    // Förberedelse för lvl 6 föremål (kan vara toalettpapper sen)
+    assets.items.lvl6[0].src = 'yarnball_sprite.png'; assets.items.lvl6[1].src = 'yarnball_sprite.png'; assets.items.lvl6[2].src = 'yarnball_sprite.png';
 
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
     const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
@@ -91,6 +111,24 @@
 
     let audioCtx, gainNode, gameMusic, currentMusicFile = 'music.mp3';
     let collectables = [], particles = [], spawnTimer = 0;
+
+    // LEVEL SELECTOR FUNKTION
+    window.selectLevel = function(num) {
+        currentLevel = num;
+        document.querySelectorAll('.lvl-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.lvl-btn')[num-1].classList.add('active');
+        
+        // Uppdatera musik-fil baserat på vald level
+        if(num === 1) currentMusicFile = 'music.mp3';
+        else if(num === 2) currentMusicFile = 'music2.mp3';
+        else if(num === 3) currentMusicFile = 'music3.mp3';
+        else if(num === 4) currentMusicFile = 'music4.mp3';
+        else if(num === 5) currentMusicFile = 'music5.mp3';
+        else if(num === 6) currentMusicFile = 'music6.mp3';
+        
+        if(gameMusic) gameMusic.src = currentMusicFile;
+        playSound(buttonSound);
+    }
 
     function initAudio() {
         if (!audioCtx) {
@@ -108,9 +146,12 @@
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
         rotateMessage.style.display = (h > w && /Android|iPhone/i.test(navigator.userAgent)) ? "flex" : "none";
-        const colors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16", "#ffe0f0"];
+        
+        const colors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16", "#ffe0f0", "#1a1a1a"];
         canvas.style.backgroundColor = colors[currentLevel-1];
-        groundY = (currentLevel === 1) ? h * 0.75 : (currentLevel === 2) ? h * 0.85 : (currentLevel === 3) ? h * 0.82 : (currentLevel === 4) ? h * 0.80 : h * 0.82;
+        
+        groundY = (currentLevel === 1) ? h * 0.75 : (currentLevel === 2) ? h * 0.85 : (currentLevel === 3) ? h * 0.82 : (currentLevel === 4) ? h * 0.80 : (currentLevel === 5) ? h * 0.82 : h * 0.85;
+        
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.75;
         bgScale = groundY / (h * 0.65);
         if(!transitioning) { player.x = w * 0.22; player.y = groundY - playerSize; }
@@ -118,7 +159,8 @@
     }
 
     function startGame() {
-        initAudio(); if(currentLevel === 1) { gameStartTime = Date.now(); itemsCollected = 0; }
+        initAudio(); 
+        if(gameStartTime === 0) gameStartTime = Date.now(); // Starta klockan bara en gång
         gameActive = true; transitioning = false;
         startMenu.style.display = "none"; levelMenu.style.display = "none";
         resize(); playSound(wowSound); gameMusic.play();
@@ -132,10 +174,11 @@
     function showMenu() {
         levelMenu.style.display = "flex";
         let next = currentLevel + 1; document.getElementById("level-title").innerText = `LEVEL ${next}`;
-        if(next === 2) { currentMusicFile='music2.mp3'; levelMenu.style.background="rgba(255,182,193,0.9)"; levelMenu.querySelector("#level-desc").innerText="Sötsug? Välkommen till Godislandet!"; }
-        else if(next === 3) { currentMusicFile='music3.mp3'; levelMenu.style.background="rgba(100,200,100,0.9)"; levelMenu.querySelector("#level-desc").innerText="Nu drar vi till Djurparken!"; }
-        else if(next === 4) { currentMusicFile='music4.mp3'; levelMenu.style.background="rgba(44,62,80,0.9)"; levelMenu.querySelector("#level-desc").innerText="Redo för rymden, rymdbajs?"; }
-        else if(next === 5) { currentMusicFile='music5.mp3'; levelMenu.style.background="rgba(255,200,240,0.9)"; levelMenu.querySelector("#level-desc").innerText="Kawaii! Välkommen till Regnbågslandet!"; }
+        if(next === 2) currentMusicFile='music2.mp3';
+        else if(next === 3) currentMusicFile='music3.mp3';
+        else if(next === 4) currentMusicFile='music4.mp3';
+        else if(next === 5) currentMusicFile='music5.mp3';
+        else if(next === 6) currentMusicFile='music6.mp3';
         gameMusic.src = currentMusicFile;
     }
 
@@ -178,9 +221,9 @@
                 let img = isGold ? assets.gold : imgSet[typeIdx];
                 let sW = isGold ? itemSize * 1.5 : itemSize;
                 let sH = sW;
-                if(img.complete) sH = sW * (img.naturalHeight/img.naturalWidth);
+                if(img && img.complete) sH = sW * (img.naturalHeight/img.naturalWidth);
                 collectables.push({ x: w, y: groundY - sH - Math.random()*(h*0.4), sW, sH, typeIdx, isGold });
-                spawnTimer = 0; totalItemsSpawned++;
+                spawnTimer = 0;
             }
 
             for(let i = collectables.length-1; i>=0; i--) {
@@ -192,48 +235,22 @@
                         playSound(yeahSound);
                     } else {
                         itemsCollected++;
-                        
-                        // BOOST LOGIK
                         if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1) || (currentLevel === 5 && (c.typeIdx === 0 || c.typeIdx === 2))) {
                             boostTimer = 120;
-                            if(currentLevel === 5 && c.typeIdx === 0) {
-                                playSound(mjauSound);
-                            } else if (currentLevel === 5 && c.typeIdx === 2) {
-                                // Tyst boost för kitten2_sprite
-                            } else {
-                                playSound(superpruttSound);
-                            }
+                            if(currentLevel === 5 && c.typeIdx === 0) playSound(mjauSound);
+                            else playSound(superpruttSound);
                         }
-                        
                         if(currentLevel === 2 && c.typeIdx === 0) playSound(chokladSound);
                         if(currentLevel === 4 && c.typeIdx === 2) playSound(neighSound);
                         if(itemsCollected % 12 === 0) playSound(braJobbatSound);
                         
-                        // BAJSFEST-TIMING
                         if(itemsCollected > 0 && itemsCollected % 25 === 0) {
                              playSound(megaBajsSound);
-                             setTimeout(() => { 
-                                 if (gameActive) { 
-                                     for(let b=0; b<120; b++) {
-                                         particles.push({ 
-                                             x: player.x + playerSize/2, y: player.y + playerSize/2, 
-                                             vx: (Math.random()-0.5)*30, vy: (Math.random()-1.2)*25, 
-                                             s: Math.random()*15 + 4, c: '#8B4513', l: 1.5 + Math.random() 
-                                         }); 
-                                     } 
-                                 } 
-                             }, 3500); 
+                             setTimeout(() => { if (gameActive) { for(let b=0; b<120; b++) particles.push({ x: player.x + playerSize/2, y: player.y + playerSize/2, vx: (Math.random()-0.5)*30, vy: (Math.random()-1.2)*25, s: Math.random()*15 + 4, c: '#8B4513', l: 1.5 + Math.random() }); } }, 3500); 
                         }
                     }
-                    let goal = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : currentLevel === 4 ? 130 : 180;
-                    if(itemsCollected === goal) {
-                        if(currentLevel === 5) {
-                            gameActive = false;
-                            if(currentSeconds < bestTime) { localStorage.setItem("skateBajsBestTime", currentSeconds); alert("YEAH! REKORD: " + currentSeconds + " sek!"); }
-                            else { alert("Bra kört! Tid: " + currentSeconds + " sek"); }
-                            location.reload();
-                        } else triggerTransition();
-                    }
+                    let goal = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : currentLevel === 4 ? 130 : currentLevel === 5 ? 180 : 250;
+                    if(itemsCollected === goal) triggerTransition();
                     collectables.splice(i,1);
                 }
                 if(c.x < -200) collectables.splice(i,1);
@@ -245,12 +262,12 @@
             if(c.isGold) { ctx.shadowBlur = 25; ctx.shadowColor = "gold"; }
             else if(currentLevel === 5 && (c.typeIdx === 0 || c.typeIdx === 2)) { ctx.shadowBlur = 20; ctx.shadowColor = "#ffe0f0"; }
             else if(currentLevel === 3) { ctx.shadowBlur = 15; ctx.shadowColor = "white"; }
-            let img = c.isGold ? assets.gold : assets.items['lvl'+currentLevel][c.typeIdx];
-            ctx.drawImage(img, c.x, c.y, c.sW, c.sH);
+            let imgSet = assets.items['lvl'+currentLevel];
+            let img = c.isGold ? assets.gold : imgSet[c.typeIdx];
+            if(img && img.complete) ctx.drawImage(img, c.x, c.y, c.sW, c.sH);
             ctx.restore();
         });
 
-        // RITA ELD (NÄRA) & SPELARE
         ctx.save();
         if (boostTimer > 0) {
             let fireW = playerSize * 0.95;
@@ -260,18 +277,13 @@
         ctx.drawImage(assets.player, player.x, player.y, playerSize, playerSize);
         ctx.restore();
         
-        particles.forEach((p, i) => {
-            p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.02;
-            ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
-            if(p.l <= 0) particles.splice(i,1);
-        });
+        particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.02; ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill(); if(p.l <= 0) particles.splice(i,1); });
         ctx.globalAlpha = 1;
 
         if (gameActive) {
             ctx.fillStyle = "white"; ctx.font = "bold 20px Courier";
             ctx.fillText(`⏱️ ${currentSeconds}s`, 30, 40);
-            let g = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : currentLevel === 4 ? 130 : 180;
+            let g = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : currentLevel === 4 ? 130 : currentLevel === 5 ? 180 : 250;
             ctx.fillText(`✨ ${itemsCollected}/${g}`, 30, 70);
             ctx.fillText(`LVL ${currentLevel}`, 30, 100);
         }
