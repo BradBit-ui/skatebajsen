@@ -42,13 +42,13 @@
             <div class="highscore-title">🏆 Snabbaste Tid</div>
             <div id="best-time-display" class="highscore-val">-- sek</div>
         </div>
-        <button id="start-btn-menu" class="game-btn-large">STARTA SPEEDRUN!</button>
+        <button id="start-btn-menu" class="game-btn-large">LETS GO!</button>
     </div>
 
     <div id="level-menu">
         <h1 id="level-title">NÄSTA NIVÅ</h1>
         <p id="level-desc">Snyggt!</p>
-        <button id="go-btn" class="game-btn-large">KÖR!</button>
+        <button id="go-btn" class="game-btn-large">LETS GO!</button>
     </div>
 
     <div id="ui-layer">
@@ -65,11 +65,9 @@
     let w, h, groundY, playerSize, itemSize, bgSpeed = 7, bgScale;
     let boostTimer = 0, gameStartTime = 0, currentSeconds = 0;
 
-    // HIGH SCORE LOGIK (Tid)
     let bestTime = localStorage.getItem("skateBajsBestTime") || Infinity;
     document.getElementById("best-time-display").innerText = bestTime === Infinity ? "-- sek" : bestTime + " sek";
 
-    // ASSETS
     const assets = {
         bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), player: new Image(), gold: new Image(),
         items: {
@@ -166,12 +164,12 @@
             
             spawnTimer++;
             if(spawnTimer > 50) {
-                let isGold = Math.random() < 0.05; // 5% chans för guld-bajs
+                let isGold = Math.random() < 0.05;
                 let typeIdx = Math.floor(Math.random()*3);
                 let imgSet = assets.items['lvl'+currentLevel];
                 let img = isGold ? assets.gold : imgSet[typeIdx];
                 
-                let sW = isGold ? itemSize * 1.5 : itemSize; // Guld-bajsen är 1.5x större
+                let sW = isGold ? itemSize * 1.5 : itemSize;
                 let sH = sW;
                 if(img.complete) sH = sW * (img.naturalHeight/img.naturalWidth);
 
@@ -183,7 +181,7 @@
                 let c = collectables[i]; c.x -= speed;
                 if(player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
                     if(c.isGold) {
-                        gameStartTime += 5000; // Drar bort 5 sekunder (lägger till tid på starttiden)
+                        gameStartTime += 5000;
                         for(let b=0; b<30; b++) particles.push({ x: c.x, y: c.y, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, s: 8, c: '#f1c40f', l: 1 });
                         playSound(wowSound);
                     } else {
@@ -202,8 +200,8 @@
                     if(itemsCollected === goal) {
                         if(currentLevel === 4) {
                             gameActive = false;
-                            if(currentSeconds < bestTime) { localStorage.setItem("skateBajsBestTime", currentSeconds); alert("NYTT REKORD: " + currentSeconds + " sek!"); }
-                            else { alert("Bra kört! Tid: " + currentSeconds + " sek"); }
+                            if(currentSeconds < bestTime) { localStorage.setItem("skateBajsBestTime", currentSeconds); alert("LETS GO! NYTT REKORD: " + currentSeconds + " sek!"); }
+                            else { alert("LETS GO! Grym tid: " + currentSeconds + " sek"); }
                             location.reload();
                         } else triggerTransition();
                     }
