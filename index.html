@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: TOTAL SILENCE FIX</title>
+    <title>Skate-bajsen: THE STABLE AUDIO CUT</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -55,7 +55,7 @@
     let gameActive = false, transitioning = false, itemsCollected = 0, currentLevel = 1, bgScroll = 0;
     let w, h, groundY, playerSize, itemSize, bgSpeed = 7, boostTimer = 0;
     let bossHealth = 200, maxBossHealth = 200, hasPaperAmmo = 0, pipeTimer = 0, projectile = null, playerRotation = 0;
-    let bossHitTimer = 0, winPlayed = false;
+    let bossHitTimer = 0, winPlayed = false, chocoPlaying = false; // Choco-skydd
     const levelGoals = [30, 35, 40, 40, 50];
     let player = { x: 0, y: 0, velocityY: 0, gravity: 0.8, jumpPower: -18, isJumping: false };
 
@@ -71,8 +71,18 @@
     let gameMusic = new Audio(); gameMusic.loop = true;
     let currentMusicFile = 'music.mp3';
 
+    // Förhindra choklad-loop
+    function playChoco() {
+        if (chocoPlaying) return;
+        chocoPlaying = true;
+        sounds.choklad.currentTime = 0;
+        sounds.choklad.play().then(() => {
+            setTimeout(() => { chocoPlaying = false; }, 200); // Lås ljudet i 200ms
+        }).catch(() => { chocoPlaying = false; });
+    }
+
     function stopAllAudio() {
-        gameMusic.pause(); gameMusic.currentTime = 0; gameMusic.src = ""; // Töm källa
+        gameMusic.pause(); gameMusic.currentTime = 0;
         Object.keys(sounds).forEach(key => {
             if (Array.isArray(sounds[key])) { sounds[key].forEach(s => { s.pause(); s.currentTime = 0; }); } 
             else { sounds[key].pause(); sounds[key].currentTime = 0; }
@@ -144,7 +154,7 @@
 
     function gameLoop() {
         requestAnimationFrame(gameLoop);
-        if (!gameActive) return; // TOTAL STOPP NÄR SPELET INTE ÄR IGÅNG
+        if (!gameActive) return; // SPÄRR
 
         ctx.clearRect(0, 0, w, h);
         let bg = assets.bg[currentLevel-1];
@@ -190,8 +200,8 @@
         for(let i = collectables.length - 1; i >= 0; i--) {
             let c = collectables[i]; c.x += (currentLevel === 6 ? c.vx : -(boostTimer > 0 ? bgSpeed * 2.5 : bgSpeed));
             if(!transitioning && player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                // CHOCO FIX: Spela ljudet enbart om spelet är aktivt
-                if(currentLevel === 2 && !c.isGold && !c.isPaper) { sounds.choklad.currentTime = 0; sounds.choklad.play().catch(()=>{}); }
+                // CHOCO FIX: Använd den nya säkrade funktionen
+                if(currentLevel === 2 && !c.isGold && !c.isPaper) playChoco();
                 
                 if(c.isGold) { playSound(sounds.yeah); for(let g=0; g<50; g++) particles.push({x: c.x+c.sW/2, y: c.y+c.sH/2, vx: Math.random()*25-12.5, vy: Math.random()*25-12.5, s: Math.random()*10+2, c: '#f1c40f', l: 1.8, isGlitter: true }); }
                 else if(c.isPaper) { hasPaperAmmo++; playSound(sounds.jump); }
@@ -217,7 +227,7 @@
 
         particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += p.isGlitter || p.isConfetti ? 0.15 : 0.45; p.l -= p.isConfetti ? 0.005 : 0.02; ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c; if(p.isConfetti) ctx.fillRect(p.x, p.y, p.s, p.s); else { ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill(); } if(p.l<=0) particles.splice(i,1); });
         ctx.globalAlpha = 1;
-        if (gameActive) { ctx.fillStyle = "white"; ctx.font = "bold 28px Courier"; if(currentLevel === 6) ctx.fillText(`🧻 AMMO: ${hasPaperAmmo}`, 30, 50); else ctx.fillText(`✨ ${itemsCollected} / ${levelGoals[currentLevel-1]}`, 30, 50); }
+        if (gameActive) { ctx.fillStyle = "white"; ctx.font = "bold 28px Courier"; if(currentLevel === 6) { ctx.fillText(`🧻 AMMO: ${hasPaperAmmo}`, 30, 50); } else { ctx.fillText(`✨ ${itemsCollected} / ${levelGoals[currentLevel-1]}`, 30, 50); } }
     }
     resize(); gameLoop(); window.addEventListener("resize", resize);
 </script>
