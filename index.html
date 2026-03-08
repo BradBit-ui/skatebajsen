@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen: Full Edition</title>
+    <title>Skate-bajsen: Final Fix</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
@@ -14,13 +14,13 @@
         .level-selector { display: flex; gap: 10px; margin: 15px 0; }
         .lvl-btn { width: 50px; height: 50px; background: #333; border: 3px solid #f1c40f; color: white; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; }
         .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 15px #f1c40f; }
-        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 50; }
+        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; }
     </style>
 </head>
 <body>
 
 <div id="game-wrapper">
-    <canvas id="gameCanvas" tabindex="1"></canvas>
+    <canvas id="gameCanvas"></canvas>
     
     <div id="start-menu">
         <h1>SKATE-BAJSEN</h1>
@@ -42,12 +42,12 @@
 
     <div id="win-screen" style="display:none;">
         <h1 style="color:#f1c40f;">GRATTIS!!!</h1>
-        <p>Du vann över bossen!</p>
+        <p>SUPER BAJS-SKATAREN!</p>
         <button class="game-btn-large" onclick="location.reload()">SPELA IGEN?</button>
     </div>
 
     <div id="ui-layer">
-        <input type="range" id="volume-slider" min="0" max="0.5" step="0.01" value="0.1">
+        <input type="range" id="volume-slider" min="0" max="0.5" step="0.01" value="0.2">
     </div>
 </div>
 
@@ -62,6 +62,9 @@
 
     // Boss & Halfpipe
     let bossHealth = 100, playerRotation = 0, pipeTimer = 0, hasPaperAmmo = 0, trickTextTimer = 0, projectile = null;
+
+    // Spelaren
+    let player = { x: 0, y: 0, velocityY: 0, gravity: 0.8, jumpPower: -18, isJumping: false };
 
     const assets = {
         bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), bg5: new Image(), bg6: new Image(), 
@@ -81,42 +84,40 @@
     loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png');
     loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
 
-    const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
-    const wowSound = new Audio('wow.m4a'), mjauSound = new Audio('mjau.m4a'), buttonSound = new Audio('button.mp3'), hitSound = new Audio('hit.mp3'), winSound = new Audio('win.mp3'), pruttJump = new Audio('superprutt.m4a'), yeahSound = new Audio('yeah.m4a'), megaBajsSound = new Audio('baaaajs.m4a'), nextLevelSound = new Audio('nextlevel.mp3');
-
-    let gameMusic = new Audio(); gameMusic.loop = true;
-    let currentMusicFile = 'music.mp3';
-
-    window.selectLevel = function(num) {
-        currentLevel = num;
-        document.querySelectorAll('.lvl-btn').forEach((btn, i) => btn.classList.toggle('active', i === num-1));
-        currentMusicFile = (num === 5) ? 'music.mp3' : ['music.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3', 'music5.mp3', 'music6.mp3'][num-1];
-        gameMusic.src = currentMusicFile;
-        playSound(buttonSound);
-    }
+    const sounds = {
+        fart: [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')],
+        wow: new Audio('wow.m4a'), mjau: new Audio('mjau.m4a'), button: new Audio('button.mp3'),
+        hit: new Audio('hit.mp3'), win: new Audio('win.mp3'), jump: new Audio('superprutt.m4a'),
+        yeah: new Audio('yeah.m4a'), mega: new Audio('baaaajs.m4a'), next: new Audio('nextlevel.mp3')
+    };
 
     function playSound(s) { s.currentTime = 0; s.volume = volumeSlider.value; s.play().catch(()=>{}); }
+
+    function selectLevel(num) {
+        currentLevel = num;
+        document.querySelectorAll('.lvl-btn').forEach((btn, i) => btn.classList.toggle('active', i === num-1));
+        playSound(sounds.button);
+    }
 
     function resize() {
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
         const colors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16", "#ffe0f0", "#1a1a1a"];
         canvas.style.backgroundColor = colors[currentLevel-1];
-        groundY = (currentLevel === 1) ? h * 0.75 : (currentLevel === 2) ? h * 0.85 : h * 0.82;
+        groundY = (currentLevel === 1) ? h * 0.75 : h * 0.82;
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.75;
         bgScale = groundY / (h * 0.65);
-        player.gravity = h * 0.0024; player.jumpPower = h * -0.045;
+        player.gravity = 0.8; player.jumpPower = -18;
+        if(currentLevel < 6) { player.x = w * 0.22; player.y = groundY - playerSize; }
     }
-
-    let player = { x: 0, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
 
     function jump() {
         if(!gameActive || transitioning) return;
         if(!player.isJumping) {
             player.velocityY = player.jumpPower; player.isJumping = true; 
-            playSound(fartSounds[Math.floor(Math.random()*3)]);
+            playSound(sounds.fart[Math.floor(Math.random()*3)]);
         } else if(currentLevel === 6) {
-            playerRotation += 360; trickTextTimer = 60; playSound(pruttJump);
+            playerRotation += 360; trickTextTimer = 60; playSound(sounds.jump);
             if(hasPaperAmmo > 0) {
                 hasPaperAmmo--;
                 projectile = { x: player.x, y: player.y, vx: 20, vy: -5 };
@@ -124,16 +125,15 @@
         }
     }
 
-    window.addEventListener("mousedown", () => { if(gameActive) jump(); });
+    window.addEventListener("mousedown", jump);
     window.addEventListener("touchstart", (e) => { if(gameActive) { e.preventDefault(); jump(); } }, {passive: false});
+    window.addEventListener("keydown", (e) => { if(e.code === "Space") jump(); });
 
     function startGame() {
         resize(); gameActive = true; transitioning = false;
         startMenu.style.display = "none"; levelMenu.style.display = "none";
         if(currentLevel === 1) { gameStartTime = Date.now(); itemsCollected = 0; }
-        if(!gameMusic.src || gameMusic.src === "") gameMusic.src = currentMusicFile;
-        gameMusic.volume = volumeSlider.value; gameMusic.play();
-        playSound(wowSound);
+        playSound(sounds.wow);
     }
     document.getElementById("start-btn-menu").onclick = startGame;
     document.getElementById("go-btn").onclick = () => { currentLevel++; itemsCollected = 0; startGame(); };
@@ -155,17 +155,15 @@
             if(player.y > curGround - playerSize) { player.y = curGround - playerSize; player.velocityY = 0; player.isJumping = false; }
             if(bg.complete) ctx.drawImage(bg, 0, 0, w, h);
             let bossX = w * 0.75, bossY = h * 0.2 + Math.sin(Date.now()*0.003)*40;
-            ctx.drawImage(assets.boss, bossX, bossY, playerSize*1.8, playerSize*1.8);
-            ctx.fillStyle='red'; ctx.fillRect(bossX, bossY-20, playerSize*1.8, 10);
-            ctx.fillStyle='green'; ctx.fillRect(bossX, bossY-20, (playerSize*1.8)*(bossHealth/100), 10);
+            if(assets.boss.complete) ctx.drawImage(assets.boss, bossX, bossY, playerSize*1.8, playerSize*1.8);
             if(projectile) {
                 projectile.x += projectile.vx; projectile.y += projectile.vy;
-                ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
+                if(assets.paper.complete) ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
                 if(projectile.x > bossX && projectile.x < bossX + playerSize*1.8 && projectile.y > bossY && projectile.y < bossY + playerSize*1.8) {
-                    bossHealth -= 15; playSound(hitSound); projectile = null;
+                    bossHealth -= 15; playSound(sounds.hit); projectile = null;
                 } else if(projectile.x > w) projectile = null;
             }
-            if(bossHealth <= 0) { gameActive = false; winScreen.style.display="flex"; playSound(winSound); }
+            if(bossHealth <= 0) { gameActive = false; winScreen.style.display="flex"; playSound(sounds.win); }
             spawnTimer++; if(spawnTimer > 80) { collectables.push({x: bossX, y: bossY+100, sW: 60, sH: 60, isPaper: true, vx: -10, vy: 2}); spawnTimer = 0; }
         } else {
             // --- LEVEL 1-5 ---
@@ -183,45 +181,47 @@
             if(spawnTimer > 50) {
                 let imgSet = items['lvl'+currentLevel];
                 let isGold = Math.random() < 0.05;
-                let idx = Math.floor(Math.random()*imgSet.length);
-                collectables.push({ x: w, y: groundY - itemSize - Math.random()*(h*0.4), sW: isGold?itemSize*1.5:itemSize, sH: itemSize, typeIdx: idx, isGold: isGold });
+                if(imgSet) {
+                    let idx = Math.floor(Math.random()*imgSet.length);
+                    collectables.push({ x: w, y: groundY - itemSize - Math.random()*(h*0.4), sW: isGold?itemSize*1.5:itemSize, sH: itemSize, typeIdx: idx, isGold: isGold });
+                }
                 spawnTimer = 0;
             }
         }
 
-        // --- GEMENSAM KOLLISION ---
+        // --- KOLLISION ---
         for(let i = collectables.length-1; i>=0; i--) {
             let c = collectables[i];
             if(currentLevel === 6) { c.x += c.vx; c.y += c.vy; } else { c.x -= (boostTimer > 0 ? bgSpeed * 2 : bgSpeed); }
             if(player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                if(c.isPaper) { hasPaperAmmo++; playSound(pruttJump); }
-                else if(c.isGold) { playSound(yeahSound); gameStartTime += 5000; }
+                if(c.isPaper) { hasPaperAmmo++; playSound(sounds.jump); }
+                else if(c.isGold) { playSound(sounds.yeah); gameStartTime += 5000; }
                 else {
                     itemsCollected++;
-                    if(currentLevel === 5 && c.typeIdx === 0) playSound(mjauSound);
+                    if(currentLevel === 5 && c.typeIdx === 0) playSound(sounds.mjau);
                     if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1) || (currentLevel === 5 && (c.typeIdx === 0 || c.typeIdx === 2))) boostTimer = 120;
                     if(itemsCollected % 25 === 0) {
-                        playSound(megaBajsSound);
+                        playSound(sounds.mega);
                         for(let j=0; j<50; j++) particles.push({x: player.x, y: player.y, vx: Math.random()*20-10, vy: Math.random()*-20, s: 8, c: '#8B4513', l: 1.5});
                     }
                     let goals = [30, 60, 90, 130, 180];
-                    if(itemsCollected >= goals[currentLevel-1]) { gameActive = false; transitioning = true; playSound(nextLevelSound); setTimeout(() => { levelMenu.style.display="flex"; }, 1000); }
+                    if(itemsCollected >= goals[currentLevel-1]) { gameActive = false; transitioning = true; playSound(sounds.next); setTimeout(() => { levelMenu.style.display="flex"; }, 1000); }
                 }
                 collectables.splice(i,1);
             }
             if(c.x < -200 || c.x > w + 200) collectables.splice(i,1);
         }
 
-        // --- RITNING ---
+        // --- RITA ---
         collectables.forEach(c => {
             let img = c.isPaper ? assets.paper : (c.isGold ? assets.gold : items['lvl'+currentLevel][c.typeIdx]);
-            if(img.complete) ctx.drawImage(img, c.x, c.y, c.sW, c.sH);
+            if(img && img.complete) ctx.drawImage(img, c.x, c.y, c.sW, c.sH);
         });
 
         ctx.save();
         ctx.translate(player.x + playerSize/2, player.y + playerSize/2);
         ctx.rotate(playerRotation * Math.PI / 180);
-        if(boostTimer > 0) ctx.drawImage(assets.fire, -playerSize, -playerSize/4, playerSize, playerSize/2);
+        if(boostTimer > 0 && assets.fire.complete) ctx.drawImage(assets.fire, -playerSize, -playerSize/4, playerSize, playerSize/2);
         ctx.drawImage(assets.player, -playerSize/2, -playerSize/2, playerSize, playerSize);
         ctx.restore();
 
