@@ -3,19 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: RED BOSS EDITION</title>
+    <title>Skate-bajsen: THE RESTORATION</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
-        #game-wrapper { position: relative; width: 100vw; height: 100vh; }
-        canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; outline: none; }
+        #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
+        canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; touch-action: none; outline: none; }
         #orientation-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #f1c40f; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; text-align: center; }
         #start-menu, #level-menu, #win-screen, #level-intro { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
+        #win-screen { background: radial-gradient(circle, rgba(241,196,15,0.3) 0%, rgba(0,0,0,0.98) 80%); }
+        @keyframes victoryDance { 0% { transform: translateY(0) rotate(0deg) scale(1.2); } 25% { transform: translateY(-40px) rotate(10deg) scale(1.3); } 50% { transform: translateY(0) rotate(0deg) scale(1.2); } 75% { transform: translateY(-40px) rotate(-10deg) scale(1.3); } 100% { transform: translateY(0) rotate(0deg) scale(1.2); } }
         .winner-sprite { width: 250px; margin-bottom: 30px; animation: victoryDance 0.5s infinite ease-in-out; filter: drop-shadow(0 0 20px #f1c40f); }
-        @keyframes victoryDance { 0%, 100% { transform: translateY(0) rotate(0deg) scale(1.2); } 50% { transform: translateY(-40px) rotate(10deg) scale(1.3); } }
+        .victory-title { font-size: 80px; color: #f1c40f; margin: 0; text-shadow: 4px 4px 0px #d35400; }
         .game-btn-large { padding: 25px 60px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 30px; }
         .lvl-btn { width: 50px; height: 50px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; }
         .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 20px #f1c40f; }
-        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; }
+        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 150; pointer-events: auto; }
+        .wow-text { position: absolute; color: #f1c40f; font-size: 80px; font-weight: bold; z-index: 200; pointer-events: none; animation: wowPop 1s ease-out forwards; text-shadow: 4px 4px 0px #d35400; }
+        @keyframes wowPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
     </style>
 </head>
 <body onclick="canvas.focus()">
@@ -24,7 +28,8 @@
 
 <div id="game-wrapper">
     <canvas id="gameCanvas" tabindex="0"></canvas>
-    <div id="level-intro" style="display:none;"><h1 id="level-intro-text" style="font-size: 100px; text-shadow: 4px 4px 0 black;">LEVEL 1</h1></div>
+    <div id="wow-container"></div>
+    <div id="level-intro" style="display:none;"><h1 id="level-intro-text" style="font-size: 100px; text-shadow: 5px 5px 0 black;">LEVEL 1</h1></div>
     <div id="start-menu">
         <img src="bajskorv_sprite.png" style="height: 35vh; margin-bottom: 20px;">
         <h1>SKATE-BAJSEN</h1>
@@ -41,7 +46,7 @@
     <div id="level-menu" style="display:none;"><h1>KLAR!</h1><button class="game-btn-large" onclick="nextLevelBtn()">NÄSTA NIVÅ</button></div>
     <div id="win-screen" style="display:none;">
         <img src="bajskorv_sprite.png" class="winner-sprite">
-        <h1 style="font-size: 80px; color: #f1c40f;">GRATTIS!!!</h1>
+        <h1 class="victory-title">GRATTIS!!!</h1>
         <button class="game-btn-large" onclick="location.reload()">SPELA IGEN</button>
     </div>
     <div id="ui-layer"><input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.2"></div>
@@ -52,37 +57,22 @@
     const volumeSlider = document.getElementById("volume-slider");
     let gameActive = false, transitioning = false, itemsCollected = 0, currentLevel = 1, bgScroll = 0;
     let w, h, groundY, playerSize, itemSizeBase, bgSpeed = 7, boostTimer = 0;
-    let bossHealth = 200, hasPaperAmmo = 0, pipeTimer = 0, projectile = null, playerRotation = 0;
-    let winPlayed = false, chocoLock = false;
+    let bossHealth = 200, maxBossHealth = 200, hasPaperAmmo = 0, pipeTimer = 0, projectile = null, playerRotation = 0;
+    let bossHitTimer = 0, winPlayed = false, chocoLock = false;
 
     const levelGoals = [30, 35, 40, 40, 50];
-    const introColors = ["#3498db", "#e91e63", "#2ecc71", "#9b59b6", "#e67e22", "#c0392b"]; // Färger för intro-skärmar
-    
+    const introColors = ["#3498db", "#e91e63", "#2ecc71", "#9b59b6", "#e67e22", "#c0392b"];
     let player = { x: 0, y: 0, velocityY: 0, gravity: 0.8, jumpPower: -18, isJumping: false };
 
     const sounds = {
-        fart: [new Audio('fart1.m4a'), new Audio('fart2.m4a')],
-        jump: new Audio('superprutt.m4a'),
-        choklad: new Audio('choklad.m4a'),
-        win: new Audio('win.mp3'),
-        next: new Audio('nextlevel.mp3'),
+        fart: [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')],
+        wow: new Audio('wow.m4a'), mjau: new Audio('mjau.m4a'), button: new Audio('button.mp3'),
+        jump: new Audio('superprutt.m4a'), yeah: new Audio('yeah.m4a'), mega: new Audio('baaaajs.m4a'),
+        next: new Audio('nextlevel.mp3'), braJobbat: new Audio('brajobbat.m4a'), choklad: new Audio('choklad.m4a'),
         bossOuch: [new Audio('ouch.m4a'), new Audio('Aj.m4a'), new Audio('dinlilla.m4a')]
     };
+    const winAudio = new Audio('win.mp3');
     let gameMusic = new Audio(); gameMusic.loop = true;
-
-    const assets = { bg: [], player: new Image(), boss: new Image(), paper: new Image(), items: { lvl1: [], lvl2: [], lvl3: [], lvl4: [], lvl5: [] } };
-    assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png';
-    for(let i=1; i<=6; i++) { let img = new Image(); img.src = i===1?'pixel_background.png':`pixel_background${i}.png`; assets.bg.push(img); }
-    
-    function loadLvl(l, i1, i2, i3) { 
-        assets.items['lvl'+l] = [new Image(), new Image(), new Image()];
-        assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3;
-    }
-    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png');
-    loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png');
-    loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png');
-    loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png');
-    loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
 
     function checkOrientation() {
         if (window.innerHeight > window.innerWidth) document.getElementById('orientation-overlay').style.display = 'flex';
@@ -90,129 +80,114 @@
     }
     window.addEventListener('resize', checkOrientation);
 
-    function resize() {
-        w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h;
-        groundY = h * 0.78; playerSize = h * 0.22; itemSizeBase = playerSize * 0.7;
-        player.x = w * 0.2; player.y = groundY - playerSize;
-        canvas.style.backgroundColor = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16", "#ffe0f0", "#1a1a1a"][currentLevel-1];
+    function stopAllAudio() {
+        gameMusic.pause(); gameMusic.currentTime = 0; gameMusic.src = "";
+        Object.values(sounds).flat().forEach(s => { s.pause(); s.currentTime = 0; });
     }
 
+    function playWinSound() {
+        if (winPlayed) return; winPlayed = true;
+        stopAllAudio();
+        setTimeout(() => {
+            winAudio.volume = 1.0; winAudio.currentTime = 0; winAudio.play().catch(()=>{});
+            for(let i=0; i<100; i++) particles.push({ x: Math.random()*w, y: -20, vx: Math.random()*10-5, vy: Math.random()*15+5, s: Math.random()*10+5, c: `hsl(${Math.random()*360},80%,50%)`, l: 4, isConfetti: true });
+        }, 100);
+    }
+
+    function playSound(s) { if(!gameActive) return; s.currentTime = 0; s.volume = 1.0; s.play().catch(()=>{}); }
+    
     function startGame() {
+        const intro = document.getElementById("level-intro");
         document.getElementById("start-menu").style.display = "none";
         document.getElementById("level-menu").style.display = "none";
-        const intro = document.getElementById("level-intro");
         intro.style.display = "flex";
-        // Sätt unik bakgrundsfärg för presentationen
-        intro.style.backgroundColor = introColors[currentLevel-1]; 
+        intro.style.backgroundColor = introColors[currentLevel-1];
         document.getElementById("level-intro-text").innerText = currentLevel === 6 ? "BOSS FIGHT!" : "LEVEL " + currentLevel;
-        
         setTimeout(() => {
-            intro.style.display = "none";
-            gameActive = true; transitioning = false;
+            intro.style.display = "none"; resize(); gameActive = true; transitioning = false;
             gameMusic.src = ['music.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3', 'music5.mp3', 'music6.mp3'][currentLevel-1];
-            gameMusic.volume = parseFloat(volumeSlider.value);
-            gameMusic.play().catch(() => {});
-            resize();
-        }, 1200);
+            gameMusic.volume = currentLevel === 6 ? Math.min(1.0, parseFloat(volumeSlider.value)*2.5) : parseFloat(volumeSlider.value);
+            gameMusic.play();
+        }, 1500);
     }
 
     window.selectLevel = (n) => { currentLevel = n; document.querySelectorAll('.lvl-btn').forEach((b,i)=>b.classList.toggle('active', i===n-1)); };
-    window.nextLevelBtn = () => { currentLevel++; itemsCollected = 0; winPlayed = false; startGame(); };
+    window.nextLevelBtn = () => { currentLevel++; winPlayed = false; itemsCollected = 0; startGame(); };
 
-    let collectables = [], spawnTimer = 0;
+    const assets = { bg: [], player: new Image(), boss: new Image(), paper: new Image(), gold: new Image(), items: { lvl1: [], lvl2: [], lvl3: [], lvl4: [], lvl5: [] } };
+    assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png'; assets.gold.src = 'gold_poop.png';
+    for(let i=1; i<=6; i++) { let img = new Image(); img.src = i===1?'pixel_background.png':`pixel_background${i}.png`; assets.bg.push(img); }
+    function loadLvl(l, i1, i2, i3) { assets.items['lvl'+l] = [new Image(), new Image(), new Image()]; assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3; }
+    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png'); loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png'); loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png'); loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png'); loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
+
+    let collectables = [], spawnTimer = 0, particles = [];
 
     function gameLoop() {
         requestAnimationFrame(gameLoop);
         if (!gameActive) return;
-
         ctx.clearRect(0, 0, w, h);
         let bg = assets.bg[currentLevel-1];
 
-        if(bg.complete) {
-            let speed = boostTimer > 0 ? bgSpeed*2 : bgSpeed;
-            bgScroll -= speed * 0.5; if(bgScroll <= -w) bgScroll = 0;
-            ctx.drawImage(bg, bgScroll, 0, w, h); ctx.drawImage(bg, bgScroll+w, 0, w, h);
-        }
-
-        player.velocityY += player.gravity; player.y += player.velocityY;
-        if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
-        
-        ctx.save();
-        ctx.translate(player.x + playerSize/2, player.y + playerSize/2);
-        ctx.rotate(playerRotation * Math.PI / 180);
-        ctx.drawImage(assets.player, -playerSize/2, -playerSize/2, playerSize, playerSize);
-        ctx.restore();
-
+        // BOSS STRID MED HALFPIPE
         if (currentLevel === 6) {
+            pipeTimer += 0.025; player.x = (w/2-playerSize/2) + Math.sin(pipeTimer)*(w*0.38);
+            let curGround = groundY - Math.pow((player.x - (w/2-playerSize/2))/(w*0.38), 2)*160;
+            player.velocityY += player.gravity; player.y += player.velocityY;
+            if(player.y > curGround - playerSize) { player.y = curGround - playerSize; player.velocityY = 0; player.isJumping = false; }
+            if(bg.complete) ctx.drawImage(bg, 0, 0, w, h);
             let bX = w*0.75, bY = h*0.2 + Math.sin(Date.now()*0.003)*40;
-            
-            // Rita RÖD BOSS
-            ctx.save();
-            ctx.filter = 'sepia(1) saturate(10) hue-rotate(-50deg)'; // Gör bossen rödaktig
-            ctx.drawImage(assets.boss, bX, bY, playerSize*1.8, playerSize*1.8);
-            ctx.restore();
-
-            ctx.fillStyle = "red"; ctx.fillRect(bX, bY-30, playerSize*1.8, 10);
-            ctx.fillStyle = "#2ecc71"; ctx.fillRect(bX, bY-30, (playerSize*1.8)*(bossHealth/200), 10);
-            
+            ctx.fillStyle = "red"; ctx.fillRect(bX, bY-40, playerSize*1.8, 15);
+            ctx.fillStyle = "#2ecc71"; ctx.fillRect(bX, bY-40, (playerSize*1.8)*(bossHealth/maxBossHealth), 15);
+            ctx.save(); ctx.filter = 'sepia(1) saturate(10) hue-rotate(-50deg)';
+            if(bossHitTimer > 0) { ctx.translate(Math.random()*20-10, Math.random()*20-10); bossHitTimer--; }
+            if(assets.boss.complete) ctx.drawImage(assets.boss, bX, bY, playerSize*1.8, playerSize*1.8); ctx.restore();
             if(projectile) {
                 projectile.x += 15; ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
-                if(projectile.x > bX) { bossHealth -= 20; projectile = null; sounds.bossOuch[Math.floor(Math.random()*3)].play(); }
+                if(projectile.x > bX && projectile.x < bX+playerSize*1.6) { bossHealth -= 15; bossHitTimer = 20; playSound(sounds.bossOuch[Math.floor(Math.random()*3)]); projectile = null; }
             }
-            if(bossHealth <= 0 && !winPlayed) { winPlayed = true; gameActive = false; gameMusic.pause(); sounds.win.play(); document.getElementById("win-screen").style.display="flex"; }
-            spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bX, y: bY+100, isPaper: true, sW: 60, sH: 60}); spawnTimer = 0; }
+            if(bossHealth <= 0) { gameActive = false; playWinSound(); document.getElementById("win-screen").style.display="flex"; }
+            spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bX, y: bY+100, isPaper: true, vx: -12, sW: 60, sH: 60}); spawnTimer = 0; }
         } else {
-            spawnTimer++;
-            if(spawnTimer > 45) {
-                let set = assets.items['lvl'+currentLevel];
-                if(set && set[0].complete) {
-                    let img = set[Math.floor(Math.random()*3)];
-                    let ratio = img.naturalWidth / img.naturalHeight;
-                    let sH = itemSizeBase;
-                    let sW = sH * ratio;
-                    collectables.push({ x: w, y: groundY - sH - Math.random()*200, sW: sW, sH: sH, img: img });
+            let speed = boostTimer > 0 ? bgSpeed*2.5 : bgSpeed; if(boostTimer > 0) boostTimer--;
+            if(bg.complete) { bgScroll -= speed*0.5; if(bgScroll <= -w) bgScroll = 0; ctx.drawImage(bg, bgScroll, 0, w, h); ctx.drawImage(bg, bgScroll+w, 0, w, h); }
+            if(transitioning) player.x += 18;
+            else {
+                player.velocityY += player.gravity; player.y += player.velocityY;
+                if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
+                spawnTimer++; if(spawnTimer > 45) {
+                    let set = assets.items['lvl'+currentLevel];
+                    if(set && set[0].complete) {
+                        let img = set[Math.floor(Math.random()*3)];
+                        let ratio = img.naturalWidth / img.naturalHeight;
+                        collectables.push({ x: w, y: groundY-itemSizeBase-Math.random()*250, sW: itemSizeBase*ratio, sH: itemSizeBase, img: img });
+                    }
+                    spawnTimer = 0;
                 }
-                spawnTimer = 0;
             }
         }
 
         for(let i = collectables.length - 1; i >= 0; i--) {
-            let c = collectables[i];
-            c.x -= bgSpeed;
-            if(c.img) ctx.drawImage(c.img, c.x, c.y, c.sW, c.sH);
-            else ctx.drawImage(assets.paper, c.x, c.y, c.sW, c.sH);
-
-            if(player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                if(c.isPaper) { hasPaperAmmo++; sounds.jump.play(); }
-                else {
-                    itemsCollected++;
-                    // Spela chokladljudet ENDAST på Level 2
-                    if(currentLevel === 2 && !chocoLock) { 
-                        chocoLock = true; sounds.choklad.play(); 
-                        setTimeout(() => chocoLock = false, 300); 
-                    }
-                    if(itemsCollected >= levelGoals[currentLevel-1]) { 
-                        gameActive = false; transitioning = true; sounds.next.play();
-                        setTimeout(() => document.getElementById("level-menu").style.display="flex", 1000);
-                    }
-                }
+            let c = collectables[i]; c.x += (currentLevel === 6 ? c.vx : -(boostTimer > 0 ? bgSpeed*2.5 : bgSpeed));
+            if(!transitioning && player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
+                if(currentLevel === 2 && !c.isPaper) { sounds.choklad.currentTime = 0; sounds.choklad.play(); }
+                if(c.isPaper) { hasPaperAmmo++; playSound(sounds.jump); }
+                else { itemsCollected++; if(itemsCollected >= levelGoals[currentLevel-1]) { transitioning = true; setTimeout(()=>document.getElementById("level-menu").style.display="flex", 1500); } }
                 collectables.splice(i, 1);
             }
-            if(c.x < -200) collectables.splice(i, 1);
+            else if(c.x < -300 || c.x > w + 300) collectables.splice(i, 1);
+            if(c.img) ctx.drawImage(c.img, c.x, c.y, c.sW, c.sH);
+            else if(c.isPaper) ctx.drawImage(assets.paper, c.x, c.y, 60, 60);
         }
 
-        ctx.fillStyle = "white"; ctx.font = "bold 24px Courier";
-        ctx.fillText(currentLevel===6 ? "🧻 AMMO: "+hasPaperAmmo : "✨ "+itemsCollected+"/"+levelGoals[currentLevel-1], 30, 50);
+        ctx.save(); ctx.translate(player.x+playerSize/2, player.y+playerSize/2); ctx.rotate(playerRotation*Math.PI/180);
+        ctx.drawImage(assets.player, -playerSize/2, -playerSize/2, playerSize, playerSize); ctx.restore();
+        particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.l -= 0.005; ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c; ctx.fillRect(p.x, p.y, p.s, p.s); if(p.l<=0) particles.splice(i,1); });
+        ctx.globalAlpha = 1;
+        if (gameActive) { ctx.fillStyle = "white"; ctx.font = "bold 28px Courier"; ctx.fillText(currentLevel===6?`🧻 AMMO: ${hasPaperAmmo}`:`✨ ${itemsCollected}/${levelGoals[currentLevel-1]}`, 30, 50); }
     }
 
-    window.addEventListener("keydown", (e) => { 
-        if(e.code === "Space" && gameActive) {
-            e.preventDefault();
-            if(!player.isJumping) { player.velocityY = player.jumpPower; player.isJumping = true; sounds.fart[0].play(); }
-            else if(currentLevel===6 && hasPaperAmmo > 0) { hasPaperAmmo--; projectile = {x: player.x, y: player.y}; playerRotation += 360; }
-        }
-    });
-
+    function resize() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; groundY = h*0.75; playerSize = h*0.25; itemSizeBase = playerSize*0.75; player.x = w*0.22; player.y = groundY-playerSize; }
+    window.addEventListener("keydown", (e) => { if(e.code === "Space" && gameActive) { e.preventDefault(); if(!player.isJumping) { player.velocityY = player.jumpPower; player.isJumping = true; playSound(sounds.fart[0]); } else if(currentLevel===6 && hasPaperAmmo>0) { hasPaperAmmo--; projectile={x:player.x, y:player.y}; playerRotation+=360; } } });
     checkOrientation(); gameLoop();
 </script>
 </body>
