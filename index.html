@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: CANDY1 PRECISION</title>
+    <title>Skate-bajsen: BACKGROUND FIX</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -73,6 +73,19 @@
     const winAudio = new Audio('win.mp3');
     let gameMusic = new Audio(); gameMusic.loop = true;
 
+    const assets = { bg: [], player: new Image(), fire: new Image(), boss: new Image(), paper: new Image(), gold: new Image(), items: { lvl1: [], lvl2: [], lvl3: [], lvl4: [], lvl5: [] } };
+    assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png'; assets.fire.src = 'fire_sprite.png'; assets.gold.src = 'gold_poop.png';
+    
+    // Fix: Ladda pixel_background1.png till pixel_background6.png konsekvent
+    for(let i=1; i<=6; i++) { 
+        let img = new Image(); 
+        img.src = `pixel_background${i}.png`; 
+        assets.bg.push(img); 
+    }
+
+    function loadLvl(l, i1, i2, i3) { assets.items['lvl'+l] = [new Image(), new Image(), new Image()]; assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3; }
+    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png'); loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png'); loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png'); loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png'); loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
+
     function triggerWow(x, y) {
         const wow = document.createElement('div'); wow.className = 'wow-text'; wow.innerText = 'WOW!';
         wow.style.left = (x || w/2-100)+'px'; wow.style.top = (y || h/2-50)+'px';
@@ -100,14 +113,6 @@
 
     window.selectLevel = (n) => { currentLevel = n; document.querySelectorAll('.lvl-btn').forEach((b,i)=>b.classList.toggle('active', i===n-1)); };
     window.nextLevelBtn = () => { currentLevel++; winPlayed = false; itemsCollected = 0; startGame(); };
-
-    const assets = { bg: [], player: new Image(), fire: new Image(), boss: new Image(), paper: new Image(), gold: new Image(), items: { lvl1: [], lvl2: [], lvl3: [], lvl4: [], lvl5: [] } };
-    assets.player.src = 'bajskorv_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png'; assets.fire.src = 'fire_sprite.png'; assets.gold.src = 'gold_poop.png';
-    for(let i=1; i<=6; i++) { let img = new Image(); img.src = i===1?'pixel_background.png':`pixel_background${i}.png`; assets.bg.push(img); }
-    function loadLvl(l, i1, i2, i3) { assets.items['lvl'+l] = [new Image(), new Image(), new Image()]; assets.items['lvl'+l][0].src = i1; assets.items['lvl'+l][1].src = i2; assets.items['lvl'+l][2].src = i3; }
-    loadLvl(1, 'unicorn_sprite.png', 'star_sprite.png', 'heart_sprite.png'); 
-    loadLvl(2, 'candy1.png', 'candy2.png', 'candy3.png'); // candy1.png laddas här
-    loadLvl(3, 'zebra_sprite.png', 'giraffe_sprite.png', 'monkey_sprite.png'); loadLvl(4, 'planet_sprite.png', 'alien_sprite.png', 'unicorn_sprite.png'); loadLvl(5, 'kitten_sprite.png', 'yarnball_sprite.png', 'kitten_sprite2.png');
 
     let collectables = [], spawnTimer = 0, particles = [];
 
@@ -163,15 +168,13 @@
         for(let i = collectables.length - 1; i >= 0; i--) {
             let c = collectables[i]; c.x += (currentLevel === 6 ? c.vx : -(boostTimer > 0 ? bgSpeed * 2.5 : bgSpeed));
             if(!transitioning && player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                
-                // PRECISIONS-FIX FÖR CANDY1.PNG
+                // CHOCO PRECISION FIX: Kolla soundDone flaggan och filnamnet
                 if(currentLevel === 2 && c.img && c.img.src.endsWith('candy1.png') && !c.soundDone) { 
                     c.soundDone = true; 
                     sounds.choklad.currentTime = 0; 
                     sounds.choklad.play(); 
-                    c.x = -2000; // Flytta bort omedelbart
+                    c.x = -2000; 
                 }
-                
                 if(c.isG) { sounds.yeah.play(); for(let g=0; g<40; g++) particles.push({x: player.x, y: player.y, vx: Math.random()*25-12.5, vy: Math.random()*25-12.5, s: Math.random()*8, c: '#f1c40f', l: 1 }); }
                 else if(c.isPaper) { hasPaperAmmo++; sounds.jump.currentTime=0; sounds.jump.play(); }
                 else {
