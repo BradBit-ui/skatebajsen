@@ -1,26 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-area=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" type="image/png" href="favicon.png">
-    <title>Skate-bajsen - Level 4: Rymden</title>
+    <title>Skate-bajsen: Universal Adventure</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #ffb6c1; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
+        body { margin: 0; padding: 0; background-color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         canvas { display: block; width: 100%; height: 100%; background-color: #87CEEB; }
+        
+        /* Rotera-meddelande för mobilen */
         #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .phone-icon { font-size: 80px; animation: rotateAnim 2s infinite ease-in-out; }
         @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+
+        /* UI Lager */
         #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 50; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
         .slider-label { color: white; font-size: 11px; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; }
         #volume-slider { cursor: pointer; width: 120px; accent-color: #f1c40f; }
+        
+        /* Menyer */
         #start-menu, #level-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
         .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; font-weight: bold; text-transform: uppercase; }
         #go-btn { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         h1 { font-size: 8vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin-bottom: 10px; }
-        #level-menu { display: none; background: rgba(255, 182, 193, 0.95); }
+        #level-menu { display: none; }
     </style>
 </head>
 <body>
@@ -58,9 +64,11 @@
     const volSettings = isMobile ? { start: 0.35, game: 0.06 } : { start: 0.12, game: 0.12 };
     volumeSlider.value = volSettings.start;
 
+    // ASSETS
     let audioCtx, gainNode, gameMusic;
     const assets = {
-        bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), player: new Image(),
+        bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(),
+        player: new Image(),
         items: {
             lvl1: [new Image(), new Image(), new Image()],
             lvl2: [new Image(), new Image(), new Image()],
@@ -68,24 +76,27 @@
             lvl4: [new Image(), new Image(), new Image()]
         }
     };
-    assets.bg1.src = 'pixel_background.png'; assets.bg2.src = 'pixel_background2.png'; assets.bg3.src = 'pixel_background3.png'; assets.bg4.src = 'pixel_background4.png';
+
+    // Ladda bilder
+    assets.bg1.src = 'pixel_background.png';
+    assets.bg2.src = 'pixel_background2.png';
+    assets.bg3.src = 'pixel_background3.png';
+    assets.bg4.src = 'pixel_background4.png';
     assets.player.src = 'bajskorv_sprite.png';
+
     assets.items.lvl1[0].src = 'unicorn_sprite.png'; assets.items.lvl1[1].src = 'star_sprite.png'; assets.items.lvl1[2].src = 'heart_sprite.png';
     assets.items.lvl2[0].src = 'candy1.png'; assets.items.lvl2[1].src = 'candy2.png'; assets.items.lvl2[2].src = 'candy3.png';
     assets.items.lvl3[0].src = 'zebra_sprite.png'; assets.items.lvl3[1].src = 'giraffe_sprite.png'; assets.items.lvl3[2].src = 'monkey_sprite.png';
-    
-    // Level 4 objekt - Uppdaterad med enhörning
-    assets.items.lvl4[0].src = 'planet_sprite.png'; assets.items.lvl4[1].src = 'alien_sprite.png'; assets.items.lvl4[2].src = 'unicorn_sprite.png'; // <- Byt ut raket mot enhörning
+    assets.items.lvl4[0].src = 'planet_sprite.png'; assets.items.lvl4[1].src = 'alien_sprite.png'; assets.items.lvl4[2].src = 'unicorn_sprite.png';
 
+    // LJUD
     const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
     const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
-    const nextLevelSound = new Audio('nextlevel.mp3'), buttonSound = new Audio('button.mp3'), chokladSound = new Audio('choklad.m4a');
-    
-    // NYTT LJUD FÖR GNÄGG
-    const neighSound = new Audio('neigh.m4a');
+    const nextLevelSound = new Audio('nextlevel.mp3'), buttonSound = new Audio('button.mp3');
+    const chokladSound = new Audio('choklad.m4a'), neighSound = new Audio('neigh.m4a');
 
     let currentMusicFile = 'music.mp3';
-    let confetti = [];
+    let confetti = [], particles = [];
 
     function initAudio() {
         if (!audioCtx) {
@@ -110,10 +121,11 @@
         canvas.width = w; canvas.height = h;
         rotateMessage.style.display = (isMobile && h > w) ? "flex" : "none";
         
+        // GroundY per bana för att matcha vägen i bilderna
         if (currentLevel === 1) groundY = h * 0.75;
         else if (currentLevel === 2) groundY = h * 0.85;
         else if (currentLevel === 3) groundY = h * 0.82;
-        else groundY = h * 0.80; // Rymden
+        else groundY = h * 0.80;
 
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.8;
         bgScale = groundY / (h * 0.65);
@@ -134,7 +146,7 @@
         player.x = w * 0.22;
         playSound(wowSound);
         gameMusic.play();
-        if (isMobile) fadeVolume(volSettings.game, audioCtx.currentTime, 1.5);
+        if (isMobile) gainNode.gain.setTargetAtTime(volSettings.game, audioCtx.currentTime, 1.5);
     }
 
     function startNextLevel() {
@@ -156,13 +168,6 @@
                 showLevelMenu();
             }
         }, 20);
-    }
-
-    function createConfetti() {
-        confetti = [];
-        for (let i = 0; i < 100; i++) {
-            confetti.push({ x: Math.random() * w, y: -Math.random() * h, size: Math.random() * 8 + 4, color: `hsl(${Math.random() * 360}, 70%, 60%)`, velocity: Math.random() * 3 + 2, angle: Math.random() * 6.28 });
-        }
     }
 
     function showLevelMenu() {
@@ -188,14 +193,18 @@
         createConfetti();
     }
 
-    document.getElementById("start-btn-menu").addEventListener("click", () => {
-        playSound(buttonSound);
-        startGame();
-    });
+    function createConfetti() {
+        confetti = [];
+        for (let i = 0; i < 100; i++) {
+            confetti.push({ x: Math.random() * w, y: -Math.random() * h, size: Math.random() * 8 + 4, color: `hsl(${Math.random() * 360}, 70%, 60%)`, velocity: Math.random() * 3 + 2, angle: Math.random() * 6.28 });
+        }
+    }
+
+    document.getElementById("start-btn-menu").addEventListener("click", () => { playSound(buttonSound); startGame(); });
     document.getElementById("go-btn").addEventListener("click", startNextLevel);
 
     let player = { x: 50, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
-    let collectables = [], particles = [], spawnTimer = 0;
+    let collectables = [], spawnTimer = 0;
 
     function handleJump() {
         if (gameActive && !player.isJumping) {
@@ -213,6 +222,7 @@
 
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
+        
         let currentBG = (currentLevel === 1) ? assets.bg1 : (currentLevel === 2) ? assets.bg2 : (currentLevel === 3) ? assets.bg3 : assets.bg4;
         ctx.drawImage(currentBG, bgScroll, -h*0.1, w * bgScale, h * bgScale);
         ctx.drawImage(currentBG, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
@@ -228,21 +238,21 @@
                 let typeIdx = Math.floor(Math.random()*3);
                 let isBoss = (totalItemsSpawned % 7 === 0);
                 
+                let imgSet = (currentLevel === 1) ? assets.items.lvl1 : (currentLevel === 2) ? assets.items.lvl2 : (currentLevel === 3) ? assets.items.lvl3 : assets.items.lvl4;
                 let baseW = itemSize;
                 let baseH = itemSize;
-                let imgSet = (currentLevel === 1) ? assets.items.lvl1 : (currentLevel === 2) ? assets.items.lvl2 : (currentLevel === 3) ? assets.items.lvl3 : assets.items.lvl4;
                 
                 if (imgSet[typeIdx].complete && imgSet[typeIdx].naturalWidth > 0) {
-                    let ratio = imgSet[typeIdx].naturalHeight / imgSet[typeIdx].naturalWidth;
-                    baseH = baseW * ratio;
+                    baseH = baseW * (imgSet[typeIdx].naturalHeight / imgSet[typeIdx].naturalWidth);
                 }
                 
                 let sW = isBoss ? baseW * 1.6 : baseW;
                 let sH = isBoss ? baseH * 1.6 : baseH;
 
-                collectables.push({ x: w, y: groundY - sH - Math.random()*(h*0.35), sW: sW, sH: sH, typeIdx, isBoss });
+                collectables.push({ x: w, y: groundY - sH - Math.random()*(h*0.35), sW, sH, typeIdx, isBoss });
                 spawnTimer = 0;
             }
+
             for(let i = collectables.length-1; i>=0; i--) {
                 let c = collectables[i]; c.x -= bgSpeed;
                 if(c.x + c.sW < 0) { collectables.splice(i, 1); continue; }
@@ -250,14 +260,12 @@
                 if(player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
                     itemsCollected++;
                     
-                    // LJUDLOGIK
+                    // Ljud-triggere
                     if (currentLevel === 2 && c.typeIdx === 0) playSound(chokladSound);
-                    
-                    // NY LJUDLOGIK FÖR ENHÖRNING PÅ LEVEL 4
-                    else if (currentLevel === 4 && c.typeIdx === 2) playSound(neighSound); // Spela gnägg för enhörningen
-                    
+                    else if (currentLevel === 4 && c.typeIdx === 2) playSound(neighSound);
                     else if(itemsCollected % 12 === 0) playSound(braJobbatSound);
 
+                    // Bajsfest (var 25:e)
                     if(itemsCollected % 25 === 0) {
                         playSound(megaBajsSound);
                         setTimeout(() => { 
@@ -270,7 +278,7 @@
                         }, 3000);
                     }
                     
-                    // Övergångar
+                    // Mål per bana
                     if(itemsCollected === 30 && currentLevel === 1) triggerNextLevelTransition();
                     else if (itemsCollected === 80 && currentLevel === 2) triggerNextLevelTransition();
                     else if (itemsCollected === 130 && currentLevel === 3) triggerNextLevelTransition();
@@ -279,19 +287,21 @@
                          alert("UNIVERSE DOMINATED! Du är herre över rymdbajset!");
                          location.reload();
                     }
-
                     collectables.splice(i,1);
                 }
             }
         }
         
+        // Rita objekt
         collectables.forEach(c => {
             let imgSet = (currentLevel === 1) ? assets.items.lvl1 : (currentLevel === 2) ? assets.items.lvl2 : (currentLevel === 3) ? assets.items.lvl3 : assets.items.lvl4;
             ctx.drawImage(imgSet[c.typeIdx], c.x, c.y, c.sW, c.sH);
         });
 
+        // Rita spelare
         ctx.drawImage(assets.player, player.x, player.y, playerSize, playerSize);
         
+        // Rita partiklar (Bajsfest)
         particles.forEach((p, i) => {
             p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.02;
             ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c;
@@ -300,6 +310,7 @@
         });
         ctx.globalAlpha = 1;
 
+        // Konfetti i meny
         if (levelMenu.style.display === "flex") {
             confetti.forEach((p, i) => {
                 p.y += p.velocity; p.x += Math.sin(p.angle) * 2; p.angle += 0.05;
