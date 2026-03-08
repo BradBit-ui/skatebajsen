@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: BOSS SOUND UPGRADE</title>
+    <title>Skate-bajsen: WIN SOUND FIXED</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -97,11 +97,14 @@
     const sounds = {
         fart: [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')],
         wow: new Audio('wow.m4a'), mjau: new Audio('mjau.m4a'), button: new Audio('button.mp3'),
-        hit: new Audio('hit.mp3'), win: new Audio('win.mp3'), jump: new Audio('superprutt.m4a'),
+        hit: new Audio('hit.mp3'), jump: new Audio('superprutt.m4a'),
         yeah: new Audio('yeah.m4a'), mega: new Audio('baaaajs.m4a'), next: new Audio('nextlevel.mp3'),
         braJobbat: new Audio('brajobbat.m4a'), choklad: new Audio('choklad.m4a'),
-        bossOuch: [new Audio('ouch.m4a'), new Audio('Aj.m4a'), new Audio('dinlilla.m4a')] // Tillagt dinlilla.m4a
+        bossOuch: [new Audio('ouch.m4a'), new Audio('Aj.m4a'), new Audio('dinlilla.m4a')]
     };
+
+    // Flyttar ut win-ljudet från ljudobjektet för att det inte ska stoppas av stopAllAudio
+    const winAudio = new Audio('win.mp3');
 
     let gameMusic = new Audio(); gameMusic.loop = true;
     let currentMusicFile = 'music.mp3';
@@ -109,6 +112,7 @@
     function stopAllAudio() {
         gameMusic.pause();
         gameMusic.currentTime = 0;
+        // Stoppa alla vanliga effekter
         Object.keys(sounds).forEach(key => {
             if (Array.isArray(sounds[key])) {
                 sounds[key].forEach(s => { s.pause(); s.currentTime = 0; });
@@ -116,6 +120,13 @@
                 sounds[key].pause(); sounds[key].currentTime = 0;
             }
         });
+    }
+
+    function playWinSound() {
+        stopAllAudio(); // Döda allt annat först
+        winAudio.currentTime = 0;
+        winAudio.volume = 1.0; // Tvinga max volym
+        winAudio.play().catch(e => console.log("Win audio blockerat:", e));
     }
 
     function playSound(s) { s.currentTime = 0; s.volume = 1.0; s.play().catch(()=>{}); }
@@ -222,16 +233,15 @@
                 ctx.drawImage(assets.paper, projectile.x, projectile.y, 60, 60);
                 if(projectile.x > bossX && projectile.x < bossX + playerSize*1.6 && projectile.y > bossY && projectile.y < bossY + playerSize*1.8) {
                     bossHealth -= 15; bossHitTimer = 20; 
-                    playSound(sounds.bossOuch[Math.floor(Math.random()*sounds.bossOuch.length)]); // Slumpar ljud vid träff
+                    playSound(sounds.bossOuch[Math.floor(Math.random()*sounds.bossOuch.length)]);
                     projectile = null;
                 } else if(projectile.x > w) projectile = null;
             }
 
             if(bossHealth <= 0) { 
                 gameActive = false; 
-                stopAllAudio();
+                playWinSound(); // Ny säker vinst-ljudsfunktion
                 document.getElementById("win-screen").style.display="flex"; 
-                setTimeout(() => playSound(sounds.win), 50); 
             }
             spawnTimer++; if(spawnTimer > 60) { collectables.push({x: bossX, y: bossY+100, isPaper: true, vx: -12, sW: 60, sH: 60}); spawnTimer = 0; }
         } else {
