@@ -3,39 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: PARTY EDITION</title>
+    <title>Skate-bajsen: TOTAL REPAIR EDITION</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
-        canvas { display: block; width: 100%; height: 100%; transition: background-color 0.1s; touch-action: none; outline: none; }
+        canvas { display: block; width: 100%; height: 100%; transition: background-color 0.1s; outline: none; }
         
-        #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a1a2e 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
-        @keyframes menuFloat { 0% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-20px) rotate(2deg); } 100% { transform: translateY(0) rotate(-2deg); } }
-        .menu-sprite { height: 35vh; margin-bottom: 20px; animation: menuFloat 3s infinite ease-in-out; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); }
-        
+        /* Fixad startsida */
+        #start-menu { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: radial-gradient(circle, #1a1a2e 0%, #000 100%); 
+            display: flex; flex-direction: column; justify-content: center; 
+            align-items: center; color: white; z-index: 100; text-align: center; 
+        }
+
+        @keyframes menuFloat {
+            0% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+            100% { transform: translateY(0) rotate(-2deg); }
+        }
+        .menu-sprite { height: 30vh; margin-bottom: 10px; animation: menuFloat 3s infinite ease-in-out; }
+
+        .menu-title { font-size: 45px; margin: 10px 0; text-shadow: 4px 4px 0px #000; }
+        .level-indicator { font-size: 24px; color: #f1c40f; margin-bottom: 20px; }
+
+        #level-select-row { display: flex; gap: 10px; margin-bottom: 30px; z-index: 110; }
+        .lvl-btn { width: 50px; height: 50px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; pointer-events: auto; }
+        .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 20px #f1c40f; }
+
+        .game-btn-large { padding: 20px 50px; font-size: 28px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; pointer-events: auto; box-shadow: 0 8px 0 #d35400; }
+        .game-btn-large:active { transform: translateY(4px); box-shadow: 0 4px 0 #d35400; }
+
+        /* Party Slutscen */
         #win-screen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.9); display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; color: white; z-index: 500; text-align: center;
-            animation: discoBg 0.5s infinite;
+            display: none; flex-direction: column; justify-content: center; 
+            align-items: center; color: white; z-index: 500; text-align: center;
+            animation: discoBg 0.4s infinite;
         }
-        /* Disco-effekt för partyt! */
         @keyframes discoBg {
-            0% { background-color: rgba(255, 0, 0, 0.3); }
-            25% { background-color: rgba(0, 255, 0, 0.3); }
-            50% { background-color: rgba(0, 0, 255, 0.3); }
-            75% { background-color: rgba(255, 255, 0, 0.3); }
-            100% { background-color: rgba(255, 0, 255, 0.3); }
+            0% { background-color: rgba(255, 0, 0, 0.4); }
+            33% { background-color: rgba(0, 255, 0, 0.4); }
+            66% { background-color: rgba(0, 0, 255, 0.4); }
         }
+        .winner-sprite { width: 250px; animation: victoryDance 0.5s infinite alternate ease-in-out; }
+        @keyframes victoryDance { from { transform: scale(1); } to { transform: scale(1.3); } }
 
-        .winner-sprite { width: 300px; animation: victoryDance 0.4s infinite alternate ease-in-out; filter: drop-shadow(0 0 30px #f1c40f); }
-        @keyframes victoryDance { 0% { transform: scale(1) rotate(-10deg); } 100% { transform: scale(1.4) rotate(10deg); } }
-
-        .game-btn-large { padding: 25px 60px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 30px; box-shadow: 0 8px 0 #d35400; }
-        .lvl-btn { width: 50px; height: 50px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; }
-        .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 20px #f1c40f; }
-        #orientation-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #f1c40f; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; text-align: center; }
-        .wow-text { position: absolute; color: #f1c40f; font-size: 80px; font-weight: bold; z-index: 200; pointer-events: none; animation: wowPop 1s ease-out forwards; }
+        #level-intro { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 200; color: white; font-size: 80px; }
+        #orientation-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #f1c40f; display: none; justify-content: center; align-items: center; z-index: 1000; }
     </style>
 </head>
 <body onclick="canvas.focus()">
@@ -44,13 +59,13 @@
 
 <div id="game-wrapper">
     <canvas id="gameCanvas" tabindex="0"></canvas>
-    <div id="wow-container"></div>
-    <div id="level-intro" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; z-index:200;"><h1 id="level-intro-text" style="font-size: 100px; color:white;">LEVEL 1</h1></div>
+    <div id="level-intro">LEVEL 1</div>
     
     <div id="start-menu">
         <img src="bajskorv_sprite.png" class="menu-sprite">
-        <h1 style="font-size: 60px; margin: 0;">SKATE-BAJSEN</h1>
-        <div style="display: flex; gap: 15px; margin: 25px 0;">
+        <div class="level-indicator" id="menu-lvl-text">LEVEL 1</div>
+        <h1 class="menu-title">SKATE-BAJSEN</h1>
+        <div id="level-select-row">
             <div class="lvl-btn active" onclick="selectLevel(1)">1</div>
             <div class="lvl-btn" onclick="selectLevel(2)">2</div>
             <div class="lvl-btn" onclick="selectLevel(3)">3</div>
@@ -61,50 +76,56 @@
         <button class="game-btn-large" onclick="startGame()">LETS GO!</button>
     </div>
 
-    <div id="win-screen" style="display:none;">
-        <h1 style="font-size: 60px; color: #f1c40f;">BOSSEN ÄR MOS!</h1>
+    <div id="win-screen">
+        <h1 style="font-size: 50px; color: #f1c40f;">BOSSEN ÄR MOS!</h1>
         <img src="bajskorv_sprite.png" class="winner-sprite">
-        <h1 style="font-size: 80px;">PARTY-TID!</h1>
+        <h1 style="font-size: 60px;">PARTY-TID!</h1>
         <button class="game-btn-large" onclick="location.reload()">SPELA IGEN</button>
     </div>
 </div>
 
 <script>
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-    let gameActive = false, currentLevel = 1, itemsCollected = 0;
-    let w, h, playerSize, groundY, screenShake = 0, particles = [];
-    let bossHealth = 200, hasPaperAmmo = 0, projectile = null;
+    let gameActive = false, currentLevel = 1, particles = [], screenShake = 0;
+    let bossHealth = 200, winPlayed = false;
 
     const sounds = {
-        fart: [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')],
         button: new Audio('button.mp3'),
-        lvlBtn: new Audio('levelbutton.mp3'), // Nytt ljud
+        lvlBtn: new Audio('levelbutton.mp3'),
         win: new Audio('win.mp3'),
         wow: new Audio('wow.m4a'),
-        ouch: [new Audio('ouch.m4a'), new Audio('Aj.m4a'), new Audio('dinlilla.m4a')]
+        choklad: new Audio('choklad.m4a')
     };
 
     function selectLevel(n) {
         currentLevel = n;
         sounds.lvlBtn.currentTime = 0;
-        sounds.lvlBtn.play().catch(()=>{}); // Spela ljudet
+        sounds.lvlBtn.play().catch(()=>{});
+        document.getElementById("menu-lvl-text").innerText = n === 6 ? "BOSS FIGHT" : "LEVEL " + n;
         document.querySelectorAll('.lvl-btn').forEach((b,i)=>b.classList.toggle('active', i===n-1));
     }
 
     function startGame() {
         sounds.button.play().catch(()=>{});
         document.getElementById("start-menu").style.display = "none";
-        resize(); gameActive = true;
-        if(currentLevel === 6) { bossHealth = 200; hasPaperAmmo = 0; }
-        else itemsCollected = 0;
+        const intro = document.getElementById("level-intro");
+        intro.style.display = "flex";
+        intro.innerText = currentLevel === 6 ? "BOSS FIGHT!" : "LEVEL " + currentLevel;
+        
+        setTimeout(() => {
+            intro.style.display = "none";
+            gameActive = true;
+            resize();
+            sounds.wow.play().catch(()=>{});
+        }, 1500);
     }
 
     function createFirework(x, y) {
-        for(let i=0; i<50; i++) {
+        for(let i=0; i<30; i++) {
             particles.push({
                 x: x, y: y,
-                vx: Math.random()*20-10, vy: Math.random()*20-10,
-                s: Math.random()*10+2,
+                vx: Math.random()*16-8, vy: Math.random()*16-8,
+                s: Math.random()*8+2,
                 c: `hsl(${Math.random()*360}, 100%, 50%)`,
                 l: 1.0
             });
@@ -115,43 +136,28 @@
         requestAnimationFrame(gameLoop);
         if (!gameActive) return;
 
-        ctx.save();
-        if (screenShake > 0) {
-            ctx.translate(Math.random()*screenShake-screenShake/2, Math.random()*screenShake-screenShake/2);
-            screenShake *= 0.9;
-        }
-
-        ctx.clearRect(0,0,w,h);
+        ctx.clearRect(0, 0, w, h);
         
-        // Förenklad Boss-logik för demo
-        if(currentLevel === 6) {
-            ctx.fillStyle = "red"; ctx.fillRect(w-300, 100, 250, 20);
-            ctx.fillStyle = "lime"; ctx.fillRect(w-300, 100, (bossHealth/200)*250, 20);
-            
-            // Vid seger
-            if(bossHealth <= 0) {
-                gameActive = false;
-                document.getElementById("win-screen").style.display = "flex";
-                sounds.win.play();
-                setInterval(() => createFirework(Math.random()*w, Math.random()*h), 300); // Party!
-            }
+        if(currentLevel === 6 && bossHealth <= 0 && !winPlayed) {
+            winPlayed = true;
+            gameActive = false;
+            document.getElementById("win-screen").style.display = "flex";
+            sounds.win.play().catch(()=>{});
+            setInterval(() => createFirework(Math.random()*w, Math.random()*h), 250);
         }
 
-        // Rendera partiklar
         particles.forEach((p, i) => {
             p.x += p.vx; p.y += p.vy; p.l -= 0.02;
-            ctx.globalAlpha = p.l; ctx.fillStyle = p.c;
+            ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI*2); ctx.fill();
             if(p.l <= 0) particles.splice(i, 1);
         });
-        ctx.restore();
+        ctx.globalAlpha = 1;
     }
-
-    // Mock-funktion för att testa boss-död (ta bort när du kör riktigt)
-    window.addEventListener('keydown', (e) => { if(e.key === 'k') bossHealth = 0; });
 
     function resize() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; }
     window.addEventListener('resize', resize);
+    window.addEventListener('keydown', (e) => { if(e.key === 'k') bossHealth = 0; }); // Fuskkod för att testa party
     resize();
     gameLoop();
 </script>
