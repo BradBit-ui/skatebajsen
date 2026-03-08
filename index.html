@@ -3,224 +3,255 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: THE RECOVERY</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <title>Skate-bajsen: Level 5 Edition</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', sans-serif; overflow: hidden; touch-action: none; }
+        body { margin: 0; padding: 0; background-color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
-        canvas { display: block; width: 100%; height: 100%; }
-        #start-menu, #level-menu, #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
-        .game-btn { padding: 15px 30px; font-size: 24px; background: #f1c40f; border: 4px solid #000; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .level-selector { display: flex; gap: 5px; margin: 10px; }
-        .lvl-btn { width: 40px; height: 40px; background: #333; border: 2px solid #f1c40f; color: white; cursor: pointer; }
-        .lvl-btn.active { background: #f1c40f; color: black; }
-        #ui-layer { position: absolute; bottom: 20px; right: 20px; z-index: 150; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px; }
+        canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; }
+        
+        #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .phone-icon { font-size: 80px; animation: rotateAnim 2s infinite ease-in-out; }
+        @keyframes rotateAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+
+        #start-menu, #level-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100; text-align: center; }
+        .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; box-shadow: 10px 10px 0px #d35400; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 20px; }
+        
+        .highscore-box { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px; border: 2px dashed #f1c40f; margin-top: 20px; }
+        .highscore-title { color: #f1c40f; font-size: 14px; text-transform: uppercase; }
+        .highscore-val { font-size: 28px; font-weight: bold; }
+
+        #ui-layer { position: absolute; bottom: 30px; right: 30px; z-index: 50; }
+        #volume-slider { cursor: pointer; width: 100px; accent-color: #f1c40f; }
+        
+        h1 { font-size: 8vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin: 0; }
+        #level-menu { display: none; }
     </style>
 </head>
 <body>
 
 <div id="game-wrapper">
+    <div id="rotate-message"><div class="phone-icon">📱🔄</div><h2>Vänd telefonen!</h2></div>
     <canvas id="gameCanvas"></canvas>
     
     <div id="start-menu">
         <h1>SKATE-BAJSEN</h1>
-        <div class="level-selector">
-            <div class="lvl-btn active" onclick="selectLevel(1)">1</div>
-            <div class="lvl-btn" onclick="selectLevel(2)">2</div>
-            <div class="lvl-btn" onclick="selectLevel(3)">3</div>
-            <div class="lvl-btn" onclick="selectLevel(4)">4</div>
-            <div class="lvl-btn" onclick="selectLevel(5)">5</div>
-            <div class="lvl-btn" onclick="selectLevel(6)">🔥</div>
+        <div class="highscore-box">
+            <div class="highscore-title">🏆 Snabbaste Tid</div>
+            <div id="best-time-display" class="highscore-val">-- sek</div>
         </div>
-        <button class="game-btn" onclick="startGame()">LETS GO!</button>
+        <button id="start-btn-menu" class="game-btn-large">LETS GO!</button>
     </div>
 
-    <div id="level-menu" style="display:none;">
-        <h1 id="level-title">KLAR!</h1>
-        <button class="game-btn" onclick="nextLevel()">NÄSTA NIVÅ</button>
-    </div>
-
-    <div id="win-screen" style="display:none;">
-        <h1 style="color:#f1c40f;">GRATTIS!!!</h1>
-        <p>SUPER BAJS-SKATAREN!</p>
-        <button class="game-btn" onclick="location.reload()">SPELA IGEN</button>
+    <div id="level-menu">
+        <h1 id="level-title">NÄSTA NIVÅ</h1>
+        <p id="level-desc">Snyggt!</p>
+        <button id="go-btn" class="game-btn-large">LETS GO!</button>
     </div>
 
     <div id="ui-layer">
-        <span style="color:white; font-size:12px;">VOLYM:</span>
-        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+        <input type="range" id="volume-slider" min="0" max="0.5" step="0.01" value="0.1">
     </div>
 </div>
 
 <script>
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-    const volumeSlider = document.getElementById("volume-slider");
-    
-    let gameActive = false, currentLevel = 1, bgScroll = 0, gameStartTime = 0;
-    let w, h, groundY, playerSize, itemSize, bgSpeed = 7;
-    let bossHealth = 100, hasPaperAmmo = 0, pipeTimer = 0, projectile = null;
+    const startMenu = document.getElementById("start-menu"), levelMenu = document.getElementById("level-menu");
+    const volumeSlider = document.getElementById("volume-slider"), rotateMessage = document.getElementById("rotate-message");
 
-    // Spelaren
-    let player = { x: 0, y: 0, velocityY: 0, gravity: 0.8, jumpPower: -18, isJumping: false };
+    let gameActive = false, transitioning = false, itemsCollected = 0, currentLevel = 1, bgScroll = 0;
+    let w, h, groundY, playerSize, itemSize, bgSpeed = 7, bgScale, boostTimer = 0;
+    let gameStartTime = 0, currentSeconds = 0;
 
-    // Bilder
+    let bestTime = localStorage.getItem("skateBajsBestTime") || Infinity;
+    document.getElementById("best-time-display").innerText = bestTime === Infinity ? "-- sek" : bestTime + " sek";
+
     const assets = {
-        bg: [new Image(), new Image(), new Image(), new Image(), new Image(), new Image()],
-        player: new Image(), boss: new Image(), paper: new Image(), fire: new Image()
+        bg1: new Image(), bg2: new Image(), bg3: new Image(), bg4: new Image(), bg5: new Image(), player: new Image(), gold: new Image(), fire: new Image(),
+        items: {
+            lvl1: [new Image(), new Image(), new Image()],
+            lvl2: [new Image(), new Image(), new Image()],
+            lvl3: [new Image(), new Image(), new Image()],
+            lvl4: [new Image(), new Image(), new Image()],
+            lvl5: [new Image(), new Image(), new Image()]
+        }
     };
-    assets.player.src = 'bajskorv_sprite.png';
-    assets.boss.src = 'boss_sprite.png';
-    assets.paper.src = 'paper_sprite.png';
-    assets.fire.src = 'fire_sprite.png';
-    for(let i=1; i<=6; i++) assets.bg[i-1].src = i === 1 ? 'pixel_background.png' : `pixel_background${i}.png`;
+    assets.bg1.src = 'pixel_background.png'; assets.bg2.src = 'pixel_background2.png'; assets.bg3.src = 'pixel_background3.png'; assets.bg4.src = 'pixel_background4.png'; assets.bg5.src = 'pixel_background5.png';
+    assets.player.src = 'bajskorv_sprite.png'; assets.gold.src = 'gold_poop.png'; assets.fire.src = 'fire_sprite.png';
+    assets.items.lvl1[0].src = 'unicorn_sprite.png'; assets.items.lvl1[1].src = 'star_sprite.png'; assets.items.lvl1[2].src = 'heart_sprite.png';
+    assets.items.lvl2[0].src = 'candy1.png'; assets.items.lvl2[1].src = 'candy2.png'; assets.items.lvl2[2].src = 'candy3.png';
+    assets.items.lvl3[0].src = 'zebra_sprite.png'; assets.items.lvl3[1].src = 'giraffe_sprite.png'; assets.items.lvl3[2].src = 'monkey_sprite.png';
+    assets.items.lvl4[0].src = 'planet_sprite.png'; assets.items.lvl4[1].src = 'alien_sprite.png'; assets.items.lvl4[2].src = 'unicorn_sprite.png';
+    assets.items.lvl5[0].src = 'kitten_sprite.png'; assets.items.lvl5[1].src = 'yarnball_sprite.png'; assets.items.lvl5[2].src = 'kitten_sprite2.png';
 
-    // Ljud
-    const sounds = {
-        fart: [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')],
-        win: new Audio('win.mp3'),
-        hit: new Audio('hit.mp3'),
-        jump: new Audio('superprutt.m4a')
-    };
+    const fartSounds = [new Audio('fart1.m4a'), new Audio('fart2.m4a'), new Audio('fart3.m4a')];
+    const wowSound = new Audio('wow.m4a'), braJobbatSound = new Audio('brajobbat.m4a'), megaBajsSound = new Audio('baaaajs.m4a');
+    const nextLevelSound = new Audio('nextlevel.mp3'), buttonSound = new Audio('button.mp3'), chokladSound = new Audio('choklad.m4a'), neighSound = new Audio('neigh.m4a');
+    const superpruttSound = new Audio('superprutt.m4a'), yeahSound = new Audio('yeah.m4a'), mjauSound = new Audio('mjau.m4a');
 
-    function playSound(s) {
-        s.volume = volumeSlider.value;
-        s.currentTime = 0;
-        s.play().catch(e => console.log("Ljudfel:", e));
+    let audioCtx, gainNode, gameMusic, currentMusicFile = 'music.mp3';
+    let collectables = [], particles = [], spawnTimer = 0;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            gainNode = audioCtx.createGain(); gainNode.connect(audioCtx.destination);
+            gameMusic = new Audio(currentMusicFile); gameMusic.loop = true;
+            const source = audioCtx.createMediaElementSource(gameMusic); source.connect(gainNode);
+        }
+        gainNode.gain.value = volumeSlider.value;
     }
 
-    function selectLevel(n) {
-        currentLevel = n;
-        document.querySelectorAll('.lvl-btn').forEach((b, i) => b.classList.toggle('active', i === n-1));
-    }
+    function playSound(s) { s.currentTime = 0; s.play().catch(()=>{}); }
 
     function resize() {
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
-        playerSize = Math.min(w, h) * 0.2;
-        itemSize = playerSize * 0.6;
-        groundY = h * 0.8;
-        if(currentLevel < 6) { player.x = w * 0.2; player.y = groundY - playerSize; }
+        rotateMessage.style.display = (h > w && /Android|iPhone/i.test(navigator.userAgent)) ? "flex" : "none";
+        const colors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16", "#ffe0f0"];
+        canvas.style.backgroundColor = colors[currentLevel-1];
+        groundY = (currentLevel === 1) ? h * 0.75 : (currentLevel === 2) ? h * 0.85 : (currentLevel === 3) ? h * 0.82 : (currentLevel === 4) ? h * 0.80 : h * 0.82;
+        playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.75;
+        bgScale = groundY / (h * 0.65);
+        if(!transitioning) { player.x = w * 0.22; player.y = groundY - playerSize; }
+        player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
     }
 
-    window.jump = function() {
-        if(!gameActive) return;
-        if(!player.isJumping) {
-            player.velocityY = player.jumpPower;
-            player.isJumping = true;
-            playSound(sounds.fart[Math.floor(Math.random()*3)]);
-        } else if(currentLevel === 6) {
-            // Trick/Skjut i Level 6
-            playSound(sounds.jump);
-            if(hasPaperAmmo > 0) {
-                hasPaperAmmo--;
-                projectile = { x: player.x, y: player.y, vx: 15 };
-            }
+    function startGame() {
+        initAudio(); if(currentLevel === 1) { gameStartTime = Date.now(); itemsCollected = 0; }
+        gameActive = true; transitioning = false;
+        startMenu.style.display = "none"; levelMenu.style.display = "none";
+        resize(); playSound(wowSound); gameMusic.play();
+    }
+
+    function triggerTransition() {
+        gameActive = false; transitioning = true; gameMusic.pause(); playSound(nextLevelSound);
+        const anim = setInterval(() => { player.x += 20; if(player.x > w + 200) { clearInterval(anim); showMenu(); }}, 20);
+    }
+
+    function showMenu() {
+        levelMenu.style.display = "flex";
+        let next = currentLevel + 1; document.getElementById("level-title").innerText = `LEVEL ${next}`;
+        const musicFiles = ['music2.mp3', 'music3.mp3', 'music4.mp3', 'music5.mp3'];
+        currentMusicFile = musicFiles[currentLevel-1];
+        gameMusic.src = currentMusicFile;
+    }
+
+    document.getElementById("start-btn-menu").addEventListener("click", () => { playSound(buttonSound); startGame(); });
+    document.getElementById("go-btn").addEventListener("click", () => { playSound(buttonSound); currentLevel++; startGame(); });
+
+    let player = { x: 0, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
+
+    function jump() {
+        if(gameActive && !player.isJumping) {
+            player.velocityY = player.jumpPower; player.isJumping = true; 
+            playSound(fartSounds[Math.floor(Math.random()*3)]);
         }
-    };
+    }
 
-    window.startGame = function() {
-        resize();
-        gameStartTime = Date.now();
-        gameActive = true;
-        document.getElementById("start-menu").style.display = "none";
-    };
+    window.addEventListener("mousedown", (e) => { if(gameActive && e.target.tagName === 'CANVAS') jump(); });
+    window.addEventListener("touchstart", (e) => { if(gameActive && e.target.tagName === 'CANVAS') { e.preventDefault(); jump(); } }, {passive: false});
+    window.addEventListener("keydown", (e) => { if(e.code === "Space") jump(); });
 
-    let collectables = [];
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
+        let currentBG = assets['bg'+currentLevel];
+        let speed = boostTimer > 0 ? bgSpeed * 2 : bgSpeed;
+        if(boostTimer > 0) boostTimer--;
+        if(gameActive) currentSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
+
+        bgScroll -= speed; if(bgScroll <= -w * bgScale) bgScroll = 0;
+        ctx.drawImage(currentBG, bgScroll, -h*0.1, w * bgScale, h * bgScale);
+        ctx.drawImage(currentBG, bgScroll + w * bgScale, -h*0.1, w * bgScale, h * bgScale);
         
-        // Bakgrund & Himmel
-        const skyColors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16", "#ffe0f0", "#1a1a1a"];
-        ctx.fillStyle = skyColors[currentLevel-1];
-        ctx.fillRect(0, 0, w, h);
-
-        if(gameActive) {
-            let bg = assets.bg[currentLevel-1];
+        if (gameActive) {
+            player.velocityY += player.gravity; player.y += player.velocityY;
+            if(player.y > (groundY - playerSize)) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
             
-            if(currentLevel < 6) {
-                // NORMAL MOTOR (Level 1-5)
-                bgScroll -= bgSpeed;
-                if(bgScroll <= -w) bgScroll = 0;
-                if(bg.complete) {
-                    ctx.drawImage(bg, bgScroll, 0, w, h);
-                    ctx.drawImage(bg, bgScroll + w, 0, w, h);
-                }
-
-                player.velocityY += player.gravity;
-                player.y += player.velocityY;
-                if(player.y > groundY - playerSize) {
-                    player.y = groundY - playerSize;
-                    player.velocityY = 0;
-                    player.isJumping = false;
-                }
-
-                // Spawn objekt (Enkel version för att undvika krasch)
-                if(Math.random() < 0.02) collectables.push({x: w, y: groundY - itemSize, type: 'item'});
-
-            } else {
-                // HALFPIPE MOTOR (Level 6)
-                pipeTimer += 0.03;
-                player.x = (w/2 - playerSize/2) + Math.sin(pipeTimer) * (w*0.35);
-                let curve = Math.pow((player.x - (w/2-playerSize/2))/(w*0.35), 2) * 150;
-                let currentGround = groundY - curve;
-
-                player.velocityY += player.gravity;
-                player.y += player.velocityY;
-                if(player.y > currentGround - playerSize) {
-                    player.y = currentGround - playerSize;
-                    player.velocityY = 0;
-                    player.isJumping = false;
-                }
-
-                if(bg.complete) ctx.drawImage(bg, 0, 0, w, h);
-
-                // Boss
-                let bossX = w * 0.7, bossY = h * 0.2;
-                if(assets.boss.complete) ctx.drawImage(assets.boss, bossX, bossY, playerSize*1.5, playerSize*1.5);
-                
-                // Pappers-attacker
-                if(Math.random() < 0.01) collectables.push({x: bossX, y: bossY, vx: -8, type: 'paper'});
-
-                // Projektil
-                if(projectile) {
-                    projectile.x += projectile.vx;
-                    ctx.drawImage(assets.paper, projectile.x, projectile.y, 50, 50);
-                    if(projectile.x > bossX) {
-                        bossHealth -= 10;
-                        playSound(sounds.hit);
-                        projectile = null;
-                        if(bossHealth <= 0) { gameActive = false; document.getElementById("win-screen").style.display = "flex"; playSound(sounds.win); }
-                    }
-                }
+            spawnTimer++;
+            if(spawnTimer > 50) {
+                let isGold = Math.random() < 0.05;
+                let typeIdx = Math.floor(Math.random()*3);
+                let imgSet = assets.items['lvl'+currentLevel];
+                let img = isGold ? assets.gold : imgSet[typeIdx];
+                let sW = isGold ? itemSize * 1.5 : itemSize;
+                let sH = sW;
+                if(img.complete) sH = sW * (img.naturalHeight/img.naturalWidth);
+                collectables.push({ x: w, y: groundY - sH - Math.random()*(h*0.4), sW, sH, typeIdx, isGold });
+                spawnTimer = 0;
             }
 
-            // Rita spelare
-            ctx.drawImage(assets.player, player.x, player.y, playerSize, playerSize);
-
-            // Hantera kollektioner
-            for(let i = collectables.length - 1; i >= 0; i--) {
-                let c = collectables[i];
-                if(currentLevel < 6) c.x -= bgSpeed; else c.x += c.vx;
-                
-                ctx.fillStyle = "white";
-                if(c.type === 'item') ctx.fillRect(c.x, c.y, itemSize, itemSize); // Placeholder för items
-                else ctx.drawImage(assets.paper, c.x, c.y, 50, 50);
-
-                if(player.x < c.x + 50 && player.x + playerSize > c.x && player.y < c.y + 50 && player.y + playerSize > c.y) {
-                    if(c.type === 'paper') hasPaperAmmo++;
-                    collectables.splice(i, 1);
+            for(let i = collectables.length-1; i>=0; i--) {
+                let c = collectables[i]; c.x -= speed;
+                if(player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
+                    if(c.isGold) {
+                        gameStartTime += 5000;
+                        for(let b=0; b<30; b++) particles.push({ x: c.x, y: c.y, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, s: 8, c: '#f1c40f', l: 1 });
+                        playSound(yeahSound);
+                    } else {
+                        itemsCollected++;
+                        if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1) || (currentLevel === 5 && (c.typeIdx === 0 || c.typeIdx === 2))) {
+                            boostTimer = 120;
+                            if(currentLevel === 5 && c.typeIdx === 0) {
+                                playSound(mjauSound);
+                            } else {
+                                playSound(superpruttSound);
+                            }
+                        }
+                        if(itemsCollected % 12 === 0) playSound(braJobbatSound);
+                        if(itemsCollected > 0 && itemsCollected % 25 === 0) {
+                             playSound(megaBajsSound);
+                             setTimeout(() => { 
+                                 if (gameActive) { 
+                                     for(let b=0; b<120; b++) particles.push({ x: player.x + playerSize/2, y: player.y + playerSize/2, vx: (Math.random()-0.5)*30, vy: (Math.random()-1.2)*25, s: Math.random()*15 + 4, c: '#8B4513', l: 1.5 + Math.random() }); 
+                                 } 
+                             }, 3500); 
+                        }
+                    }
+                    let goal = currentLevel === 1 ? 30 : currentLevel === 2 ? 60 : currentLevel === 3 ? 90 : currentLevel === 4 ? 130 : 180;
+                    if(itemsCollected === goal) {
+                        if(currentLevel === 5) {
+                            gameActive = false;
+                            if(currentSeconds < bestTime) localStorage.setItem("skateBajsBestTime", currentSeconds);
+                            location.reload();
+                        } else triggerTransition();
+                    }
+                    collectables.splice(i,1);
                 }
+                if(c.x < -200) collectables.splice(i,1);
             }
         }
+        
+        collectables.forEach(c => {
+            let img = c.isGold ? assets.gold : assets.items['lvl'+currentLevel][c.typeIdx];
+            if(img && img.complete) ctx.drawImage(img, c.x, c.y, c.sW, c.sH);
+        });
 
+        ctx.save();
+        if (boostTimer > 0) {
+            let fireW = playerSize * 0.95;
+            let fireH = fireW * (assets.fire.naturalHeight / assets.fire.naturalWidth || 1);
+            ctx.drawImage(assets.fire, player.x - fireW * 0.70, player.y + playerSize * 0.45 - fireH / 2, fireW, fireH);
+        }
+        ctx.drawImage(assets.player, player.x, player.y, playerSize, playerSize);
+        ctx.restore();
+        
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.l -= 0.02;
+            ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill();
+            if(p.l <= 0) particles.splice(i,1);
+        });
+        ctx.globalAlpha = 1;
+
+        if (gameActive) {
+            ctx.fillStyle = "white"; ctx.font = "bold 20px Courier";
+            ctx.fillText(`⏱️ ${currentSeconds}s`, 30, 40);
+        }
         requestAnimationFrame(gameLoop);
     }
-
-    window.addEventListener("mousedown", jump);
-    window.addEventListener("touchstart", (e) => { e.preventDefault(); jump(); });
-    window.addEventListener("resize", resize);
-
-    resize();
-    gameLoop();
+    window.addEventListener('resize', resize);
+    resize(); gameLoop();
 </script>
 </body>
 </html>
