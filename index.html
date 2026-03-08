@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: JUMP PRIORITY FIX</title>
+    <title>Skate-bajsen: Golden Glitter Edition</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
@@ -25,7 +25,7 @@
     <div id="wow-container"></div>
     
     <div id="start-menu">
-        <img src="start_player.png" style="height: 25vh; margin-bottom: 20px;">
+        <img src="bajskorv_sprite.png" style="height: 30vh; margin-bottom: 15px;">
         <h1>SKATE-BAJSEN</h1>
         <div class="level-selector">
             <div class="lvl-btn active" onclick="selectLevel(1)">1</div>
@@ -67,7 +67,8 @@
         bg: [], player: new Image(), fire: new Image(), boss: new Image(), paper: new Image(), gold: new Image(),
         items: { lvl1: [], lvl2: [], lvl3: [], lvl4: [], lvl5: [] }
     };
-    assets.player.src = 'bajskorv_sprite.png'; assets.fire.src = 'fire_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png'; assets.gold.src = 'gold_poop.png';
+    assets.player.src = 'bajskorv_sprite.png';
+    assets.fire.src = 'fire_sprite.png'; assets.boss.src = 'boss_sprite.png'; assets.paper.src = 'paper_sprite.png'; assets.gold.src = 'gold_poop.png';
     for(let i=1; i<=6; i++) {
         let img = new Image(); img.src = i === 1 ? 'pixel_background.png' : `pixel_background${i}.png`;
         assets.bg.push(img);
@@ -131,22 +132,18 @@
         }
     }
 
-    // --- GLOBAL INPUT FIX ---
-    document.addEventListener("mousedown", (e) => {
-        if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
-            if(gameActive) jump();
-        }
+    // Global lyssnare för hoppet - Säkrad logik
+    document.addEventListener("mousedown", (e) => { 
+        if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && gameActive) jump();
     });
-    document.addEventListener("touchstart", (e) => {
-        if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
-            if(gameActive) { e.preventDefault(); jump(); }
-        }
+    document.addEventListener("touchstart", (e) => { 
+        if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && gameActive) { e.preventDefault(); jump(); }
     }, {passive: false});
-    document.addEventListener("keydown", (e) => {
-        if(e.code === "Space" && gameActive) { e.preventDefault(); jump(); }
-    });
 
     function startGame() {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if(isMobile) { volumeSlider.value = 0.1; }
+        
         resize(); gameActive = true; transitioning = false;
         document.getElementById("start-menu").style.display = "none";
         document.getElementById("level-menu").style.display = "none";
@@ -211,14 +208,17 @@
             if(currentLevel === 6) c.x += c.vx; else c.x -= (boostTimer > 0 ? bgSpeed * 2 : bgSpeed);
             
             if(player.x < c.x + c.sW && player.x + playerSize > c.x && player.y < c.y + c.sH && player.y + playerSize > c.y) {
-                if(c.isPaper) { hasPaperAmmo++; playSound(sounds.jump); }
-                else if(c.isGold) { playSound(sounds.yeah); }
-                else {
+                if(c.isGold) { 
+                    playSound(sounds.yeah);
+                    triggerWow(player.x, player.y - 100);
+                    for(let g=0; g<40; g++) { // GULDGLITTER ✨
+                        particles.push({x: c.x + c.sW/2, y: c.y + c.sH/2, vx: Math.random()*20-10, vy: Math.random()*20-10, s: Math.random()*8+2, c: '#f1c40f', l: 1.5, isGlitter: true });
+                    }
+                } else if(c.isPaper) { 
+                    hasPaperAmmo++; playSound(sounds.jump); 
+                } else {
                     if(c.isBig) triggerWow(player.x, player.y - 100);
                     itemsCollected++;
-                    if(itemsCollected % 12 === 0) playSound(sounds.braJobbat);
-                    if(currentLevel === 5 && c.typeIdx === 0) playSound(sounds.mjau);
-                    if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1) || (currentLevel === 5 && (c.typeIdx === 0 || c.typeIdx === 2))) boostTimer = 120;
                     
                     if(itemsCollected % 25 === 0) {
                         playSound(sounds.mega);
@@ -227,9 +227,12 @@
                                 for(let j=0; j<80; j++) particles.push({x: player.x, y: player.y, vx: Math.random()*30-15, vy: Math.random()*-25, s: Math.random()*15+5, c: '#8B4513', l: 2.5});
                             }
                         }, 3500);
+                    } else if(itemsCollected % 12 === 0) {
+                        playSound(sounds.braJobbat);
                     }
-                    let goals = [30, 60, 90, 130, 180];
-                    if(itemsCollected >= goals[currentLevel-1]) { gameActive = false; transitioning = true; playSound(sounds.next); setTimeout(() => { document.getElementById("level-menu").style.display="flex"; }, 1000); }
+
+                    if(currentLevel === 5 && c.typeIdx === 0) playSound(sounds.mjau);
+                    if((currentLevel === 3 && c.typeIdx === 2) || (currentLevel === 4 && c.typeIdx === 1) || (currentLevel === 5 && (c.typeIdx === 0 || c.typeIdx === 2))) boostTimer = 120;
                 }
                 collectables.splice(i, 1);
             }
@@ -243,7 +246,16 @@
         if(boostTimer > 0 && assets.fire.complete) ctx.drawImage(assets.fire, -playerSize, -playerSize/4, playerSize, playerSize/2);
         ctx.drawImage(assets.player, -playerSize/2, -playerSize/2, playerSize, playerSize); ctx.restore();
 
-        particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += 0.4; p.l -= 0.02; ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill(); if(p.l<=0) particles.splice(i,1); });
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; 
+            if(p.isGlitter) { p.vy += 0.2; p.vx *= 0.98; } else { p.vy += 0.4; }
+            p.l -= 0.02; 
+            ctx.globalAlpha = Math.max(0, p.l); 
+            ctx.fillStyle = p.c; 
+            if(p.isGlitter && Math.random() > 0.5) ctx.fillStyle = "white"; // Blinkande effekt
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 7); ctx.fill(); 
+            if(p.l<=0) particles.splice(i,1); 
+        });
         ctx.globalAlpha = 1;
 
         if (gameActive) {
