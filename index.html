@@ -8,15 +8,12 @@
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
         canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; touch-action: none; }
-        
-        /* Menyerna får pointer-events: none så de inte blockerar klick på spelet under */
         #start-menu, #level-menu, #win-screen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.85); display: flex; flex-direction: column; 
             justify-content: center; align-items: center; color: white; z-index: 100; 
             text-align: center; pointer-events: auto; 
         }
-        
         .game-btn-large { padding: 25px 50px; font-size: 32px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 20px; }
         .level-selector { display: flex; gap: 10px; margin: 15px 0; }
         .lvl-btn { width: 45px; height: 45px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 18px; }
@@ -103,14 +100,10 @@
     let gameMusic = new Audio(); gameMusic.loop = true;
     let currentMusicFile = 'music.mp3';
 
-    // LJUDEFFEKTER SPELAS ALLTID PÅ VOLYM 1.0
     function playSound(s) { 
-        s.currentTime = 0; 
-        s.volume = 1.0; 
-        s.play().catch(()=>{}); 
+        s.currentTime = 0; s.volume = 1.0; s.play().catch(()=>{}); 
     }
 
-    // ENDAST MUSIKEN PÅVERKAS AV SLIDERN
     volumeSlider.addEventListener('input', () => {
         if(gameMusic) gameMusic.volume = parseFloat(volumeSlider.value);
     });
@@ -134,7 +127,6 @@
     function resize() {
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
-        // ÅTERSTÄLLD HIMMELSFÄRG
         const skyColors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16", "#ffe0f0", "#1a1a1a"];
         canvas.style.backgroundColor = skyColors[currentLevel-1];
         groundY = (currentLevel === 1) ? h * 0.75 : h * 0.82;
@@ -156,7 +148,6 @@
         }
     }
 
-    // GLOBAL INPUT FIX FÖR HOPP
     window.addEventListener("mousedown", (e) => { 
         if(gameActive && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') jumpAction(); 
     });
@@ -209,7 +200,7 @@
                 ctx.drawImage(bg, bgScroll, 0, w, h); ctx.drawImage(bg, bgScroll + w, 0, w, h);
             }
             if(transitioning) {
-                player.x += 15; player.velocityY = 0; // ÅKER UR BILD
+                player.x += 15; player.velocityY = 0;
             } else {
                 player.velocityY += player.gravity; player.y += player.velocityY;
                 if(player.y > groundY - playerSize) { player.y = groundY - playerSize; player.velocityY = 0; player.isJumping = false; }
@@ -217,7 +208,6 @@
                 if(spawnTimer > 50) {
                     let imgSet = assets.items['lvl'+currentLevel];
                     if(imgSet) {
-                        // GULDBAJS TILLGÄNGLIG PÅ ALLA NIVÅER
                         let isGold = Math.random() < 0.05;
                         let isRandomBig = Math.random() < 0.15;
                         let typeIdx = Math.floor(Math.random()*3);
