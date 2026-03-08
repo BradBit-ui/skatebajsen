@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Skate-bajsen: PRO PARTY EDITION</title>
+    <title>Skate-bajsen: MOBILE VOLUME FIX</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; transition: background-color 0.5s; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; touch-action: none; }
@@ -13,7 +13,6 @@
         #progress-bar-bg { width: 200px; height: 15px; background: rgba(0,0,0,0.5); border: 2px solid #f1c40f; margin-top: 5px; }
         #progress-bar-fill { width: 0%; height: 100%; background: #f1c40f; transition: width 0.2s; }
 
-        /* INTRO-BOX MED FÄRG */
         #level-intro { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 300; pointer-events: none; }
         #level-intro-box { padding: 30px 60px; color: white; font-size: 40px; font-weight: bold; border: 5px solid white; text-transform: uppercase; text-align: center; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
 
@@ -23,7 +22,6 @@
         
         .lvl-btn { width: 50px; height: 50px; background: #333; border: 3px solid #f1c40f; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; transition: transform 0.2s; }
         .lvl-btn.active { background: #f1c40f; color: black; box-shadow: 0 0 15px #f1c40f; transform: scale(1.1); }
-        
         .game-btn-large { padding: 20px 50px; font-size: 28px; background-color: #f1c40f; border: 6px solid #000; cursor: pointer; font-weight: bold; text-transform: uppercase; box-shadow: 0 8px 0 #d35400; }
         
         #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 500; text-align: center; background-color: #1a1a2e; }
@@ -31,7 +29,10 @@
         .main-winner { width: 100%; animation: menuFloat 0.5s infinite; filter: drop-shadow(0 0 20px #f1c40f); }
         .guest-poop { position: absolute; width: 70px; animation: menuFloat 1.2s infinite ease-in-out; }
         
-        #ui-layer { position: absolute; bottom: 20px; right: 20px; z-index: 150; background: rgba(0,0,0,0.6); padding: 8px; border-radius: 8px; border: 1px solid #f1c40f; }
+        /* Uppdaterad Volympanel för mobil */
+        #ui-layer { position: absolute; bottom: 25px; right: 25px; z-index: 400; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 12px; border: 2px solid #f1c40f; pointer-events: auto; }
+        #volume-slider { width: 150px; height: 30px; cursor: pointer; }
+
         .wow-text { position: absolute; color: #f1c40f; font-size: 80px; font-weight: bold; z-index: 200; pointer-events: none; animation: wowPop 1s ease-out forwards; text-shadow: 4px 4px 0px #d35400; }
         @keyframes wowPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
         #orientation-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #f1c40f; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
@@ -46,9 +47,7 @@
         <div id="score-text">POÄNG: 0 / 30</div>
         <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
     </div>
-    
     <div id="level-intro"><div id="level-intro-box">LEVEL 1 - CITY</div></div>
-    
     <div id="wow-container"></div>
     <canvas id="gameCanvas"></canvas>
 
@@ -64,7 +63,7 @@
             <div class="lvl-btn" onclick="selectLevel(5)">5</div>
             <div class="lvl-btn" onclick="selectLevel(6)">🔥</div>
         </div>
-        <button class="game-btn-large" onclick="startGame()">Lets Go!</button>
+        <button class="game-btn-large" onclick="startGame()">LETS GO!</button>
     </div>
 
     <div id="win-screen">
@@ -75,12 +74,12 @@
             <img src="bajskorv_sprite.png" class="main-winner">
         </div>
         <p style="font-size:24px;">Hela toaletten gungar!</p>
-        <button class="game-btn-large" onclick="location.reload()">Spela igen</button>
+        <button class="game-btn-large" onclick="location.reload()">SPELA IGEN</button>
     </div>
 
     <div id="ui-layer">
-        <span style="color:#f1c40f; font-size:10px; display:block;">Musikvolym</span>
-        <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.2">
+        <span style="color:#f1c40f; font-size:12px; display:block; margin-bottom:5px; font-weight:bold;">MUSIKVOLYM</span>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.05">
     </div>
 </div>
 
@@ -91,8 +90,6 @@
     let w, h, groundY, playerSize, itemSizeBase, gameActive = false, currentLevel = 1, itemsCollected = 0, bgScroll = 0, screenShake = 0, spawnTimer = 0, boostTimer = 0, isEndingLevel = false, pipeTimer = 0, projectile = null, bossHealth = 200, hasPaperAmmo = 0, winPlayed = false;
     
     const levelGoals = [30, 35, 40, 40, 50];
-    
-    // Uppdaterade ban-namn och färger
     const levelData = [
         { name: "Level 1 - City", color: "rgba(155, 89, 182, 0.8)", bg: "#1a1a2e" },
         { name: "Level 2 - Candy", color: "rgba(231, 76, 60, 0.8)", bg: "#2e0a1a" },
@@ -111,7 +108,12 @@
     };
     let gameMusic = new Audio(); gameMusic.loop = true;
 
-    function updateVol() { gameMusic.volume = parseFloat(volumeSlider.value); }
+    // Förbättrad volymfunktion
+    function updateVol() { 
+        const val = parseFloat(volumeSlider.value);
+        gameMusic.volume = val;
+        // Endast bakgrundsmusik påverkas som begärt
+    }
     volumeSlider.addEventListener('input', updateVol);
 
     const assets = { player: new Image(), boss: new Image(), paper: new Image(), fire: new Image(), gold: new Image(), bg: [], items: {} };
@@ -149,19 +151,19 @@
 
     function loadLevelSequence() {
         gameActive = false; isEndingLevel = false;
-        
-        // VISAR FÄRGAD BOX ENDAST HÄR
         introDiv.style.display = "flex";
         introBox.innerText = levelData[currentLevel-1].name;
         introBox.style.backgroundColor = levelData[currentLevel-1].color;
-
         collectables = []; itemsCollected = 0; boostTimer = 0; player.x = w * 0.2;
         
         setTimeout(() => {
             introDiv.style.display = "none"; gameActive = true;
             if(currentLevel < 6) { gameUI.style.display = "block"; updateUI(); } else { gameUI.style.display = "none"; bossHealth = 200; }
             gameMusic.src = currentLevel === 1 ? 'music.mp3' : `music${currentLevel}.mp3`; 
-            gameMusic.play().catch(()=>{});
+            
+            // TVINGAD SYNCHRONISATION AV VOLYM VID START
+            gameMusic.volume = parseFloat(volumeSlider.value);
+            gameMusic.play().catch(e => console.log("Ljud blockerat"));
         }, 1600);
     }
 
@@ -180,13 +182,12 @@
     function spawnPoopFest() {
         sounds.mega.currentTime = 0;
         sounds.mega.play();
-        // Väntar 1.6s så ljudet hinner spela
         setTimeout(() => {
             for(let j=0; j<120; j++) {
                 particles.push({
                     x: player.x + playerSize/2, y: player.y + playerSize/2,
                     vx: Math.random()*40 - 20, vy: Math.random()*-30 - 5,
-                    c: '#8B4513', l: 2.5, grav: 0.8 // Tyngre känsla
+                    c: '#8B4513', l: 2.5, grav: 0.8
                 });
             }
         }, 1600);
@@ -253,7 +254,7 @@
 
         if(boostTimer > 0) boostTimer--;
         ctx.save(); ctx.translate(player.x+playerSize/2, player.y+playerSize/2); ctx.rotate(player.rot*Math.PI/180);
-        if(boostTimer > 0) ctx.drawImage(assets.fire, -playerSize, -playerSize/4, playerSize, playerSize/2);
+        if(boostTimer > 0) ctx.drawImage(assets.fire, -playerSize + 5, -playerSize/4, playerSize, playerSize/2);
         ctx.drawImage(assets.player, -playerSize/2, -playerSize/2, playerSize, playerSize); ctx.restore();
 
         particles.forEach((p, i) => { 
