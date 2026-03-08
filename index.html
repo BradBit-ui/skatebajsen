@@ -8,7 +8,7 @@
     <style>
         body { margin: 0; padding: 0; background-color: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; touch-action: none; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; }
-        canvas { display: block; width: 100%; height: 100%; }
+        canvas { display: block; width: 100%; height: 100%; transition: background-color 1s; }
         
         #rotate-message { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffb6c1; color: #333; z-index: 300; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .phone-icon { font-size: 80px; animation: rotateAnim 2s infinite ease-in-out; }
@@ -26,8 +26,6 @@
         
         h1 { font-size: 8vw; color: #fff; text-shadow: 6px 6px 0px #d35400; margin: 0; }
         #level-menu { display: none; }
-        .bonus-text { position: absolute; color: #f1c40f; font-weight: bold; font-size: 40px; pointer-events: none; animation: flyUp 1s forwards; }
-        @keyframes flyUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-100px); } }
     </style>
 </head>
 <body>
@@ -62,8 +60,8 @@
     const volumeSlider = document.getElementById("volume-slider"), rotateMessage = document.getElementById("rotate-message");
 
     let gameActive = false, transitioning = false, itemsCollected = 0, currentLevel = 1, bgScroll = 0;
-    let w, h, groundY, playerSize, itemSize, bgSpeed = 7, bgScale;
-    let boostTimer = 0, gameStartTime = 0, currentSeconds = 0;
+    let w, h, groundY, playerSize, itemSize, bgSpeed = 7, bgScale, boostTimer = 0;
+    let gameStartTime = 0, currentSeconds = 0, totalItemsSpawned = 0;
 
     let bestTime = localStorage.getItem("skateBajsBestTime") || Infinity;
     document.getElementById("best-time-display").innerText = bestTime === Infinity ? "-- sek" : bestTime + " sek";
@@ -107,15 +105,24 @@
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w; canvas.height = h;
         rotateMessage.style.display = (h > w && /Android|iPhone/i.test(navigator.userAgent)) ? "flex" : "none";
+        
+        const colors = ["#87CEEB", "#ffb6c1", "#90ee90", "#0b0b16"];
+        canvas.style.backgroundColor = colors[currentLevel-1];
+
         groundY = (currentLevel === 1) ? h * 0.75 : (currentLevel === 2) ? h * 0.85 : (currentLevel === 3) ? h * 0.82 : h * 0.80;
         playerSize = Math.min(w, h) * 0.25; itemSize = playerSize * 0.75;
         bgScale = groundY / (h * 0.65);
-        player.y = groundY - playerSize; player.x = w * 0.22;
         player.gravity = h * 0.0024; player.jumpPower = h * -0.044;
+        
+        if(!transitioning) {
+            player.x = w * 0.22;
+            player.y = groundY - playerSize;
+        }
     }
 
     function startGame() {
-        initAudio(); if(currentLevel === 1) { gameStartTime = Date.now(); itemsCollected = 0; }
+        initAudio(); 
+        if(currentLevel === 1) { gameStartTime = Date.now(); itemsCollected = 0; }
         gameActive = true; transitioning = false;
         startMenu.style.display = "none"; levelMenu.style.display = "none";
         resize(); playSound(wowSound); gameMusic.play();
@@ -135,17 +142,23 @@
         gameMusic.src = currentMusicFile;
     }
 
-    document.getElementById("start-btn-menu").addEventListener("click", startGame);
-    document.getElementById("go-btn").addEventListener("click", () => { currentLevel++; startGame(); });
+    document.getElementById("start-btn-menu").addEventListener("click", () => { playSound(buttonSound); startGame(); });
+    document.getElementById("go-btn").addEventListener("click", () => { playSound(buttonSound); currentLevel++; startGame(); });
 
     let player = { x: 0, y: 0, velocityY: 0, gravity: 0, jumpPower: 0, isJumping: false };
 
-    window.addEventListener("touchstart", (e) => { 
-        if(gameActive && e.target.tagName !== 'INPUT') { 
-            e.preventDefault(); 
-            if(!player.isJumping) { player.velocityY = player.jumpPower; player.isJumping = true; playSound(fartSounds[Math.floor(Math.random()*3)]); }
+    function jump() {
+        if(gameActive && !player.isJumping) {
+            player.velocityY = player.jumpPower; 
+            player.isJumping = true; 
+            playSound(fartSounds[Math.floor(Math.random()*3)]);
         }
-    }, {passive: false});
+    }
+
+    // Input-lyssnare
+    window.addEventListener("mousedown", (e) => { if(gameActive && e.target.tagName === 'CANVAS') jump(); });
+    window.addEventListener("touchstart", (e) => { if(gameActive && e.target.tagName === 'CANVAS') { e.preventDefault(); jump(); } }, {passive: false});
+    window.addEventListener("keydown", (e) => { if(e.code === "Space") jump(); });
 
     function gameLoop() {
         ctx.clearRect(0, 0, w, h);
@@ -174,7 +187,7 @@
                 if(img.complete) sH = sW * (img.naturalHeight/img.naturalWidth);
 
                 collectables.push({ x: w, y: groundY - sH - Math.random()*(h*0.4), sW, sH, typeIdx, isGold });
-                spawnTimer = 0;
+                spawnTimer = 0; totalItemsSpawned++;
             }
 
             for(let i = collectables.length-1; i>=0; i--) {
@@ -192,7 +205,7 @@
                         if(itemsCollected % 12 === 0) playSound(braJobbatSound);
                         if(itemsCollected % 25 === 0) {
                              playSound(megaBajsSound);
-                             setTimeout(() => { for(let b=0; b<50; b++) particles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*20, vy: (Math.random()-1)*20, s: 10, c: '#8B4513', l: 1 }); }, 2000);
+                             setTimeout(() => { if (gameActive) { for(let b=0; b<50; b++) particles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*20, vy: (Math.random()-1)*20, s: 10, c: '#8B4513', l: 1 }); } }, 2000);
                         }
                     }
                     
@@ -214,7 +227,7 @@
         collectables.forEach(c => {
             ctx.save();
             if(c.isGold) { ctx.shadowBlur = 20; ctx.shadowColor = "gold"; }
-            else if(currentLevel === 3) { ctx.shadowBlur = 10; ctx.shadowColor = "white"; }
+            else if(currentLevel === 3) { ctx.shadowBlur = 15; ctx.shadowColor = "white"; }
             let img = c.isGold ? assets.gold : assets.items['lvl'+currentLevel][c.typeIdx];
             ctx.drawImage(img, c.x, c.y, c.sW, c.sH);
             ctx.restore();
