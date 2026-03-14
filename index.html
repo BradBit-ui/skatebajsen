@@ -25,6 +25,10 @@
         .wow-text { position: absolute; color: #f1c40f; font-size: 80px; font-weight: bold; z-index: 200; pointer-events: none; animation: wowPop 1s ease-out forwards; text-shadow: 4px 4px 0px #d35400; }
         @keyframes wowPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
         #orientation-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #f1c40f; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+
+        /* NYTT: START-SKÄRMEN */
+        #punk-intro-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; color: #f1c40f; }
+        .retro-btn { padding: 30px 60px; font-size: 32px; background: #e74c3c; border: 6px solid #fff; color: #fff; cursor: pointer; font-weight: bold; box-shadow: 8px 8px 0 #c0392b; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -32,6 +36,11 @@
 <div id="orientation-overlay"><h1>VÄND PÅ MOBILEN</h1><p>LANDSCAPE MODE! 💩🛹</p></div>
 
 <div id="game-wrapper">
+    <div id="punk-intro-screen">
+        <h1 style="font-size: 48px; margin-bottom: 20px;">READY TO SKATE?</h1>
+        <button class="retro-btn" onclick="startPunkMode()">INSERT COIN</button>
+    </div>
+
     <div id="game-ui" style="display: none;">
         <div id="score-text">POÄNG: 0 / 30</div>
         <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
@@ -65,7 +74,16 @@
 </div>
 
 <script>
-    // Mobil-check
+    // NYTT: MUSIKHANTERING
+    let punkMusic = new Audio('skaterbajs.mp3'); punkMusic.loop = true;
+    function startPunkMode() {
+        unlockAudio();
+        punkMusic.play().catch(e => console.log("Ljud blockerat eller fil saknas"));
+        document.getElementById('punk-intro-screen').style.display = 'none';
+        applySafeVolume();
+    }
+
+    // DIN ORIGINALKOD - HELT ORÖRD
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
     const volumeSlider = document.getElementById("volume-slider"), startMenu = document.getElementById("start-menu");
@@ -95,7 +113,10 @@
 
     function applySafeVolume() {
         const v = parseFloat(volumeSlider.value);
-        if(!isMobile) gameMusic.volume = v;
+        if(!isMobile) {
+            gameMusic.volume = v;
+            punkMusic.volume = v; // Sätt volym på punklåten också
+        }
         Object.values(sounds).forEach(s => {
             if(Array.isArray(s)) s.forEach(a => a.volume = Math.min(v * 3, 0.5));
             else s.volume = Math.min(v * 3, 0.5);
@@ -118,7 +139,10 @@
         document.querySelectorAll('.lvl-btn').forEach((b,i)=>b.classList.toggle('active', i===n-1)); 
     }
 
-    function startGame() { unlockAudio(); resize(); applySafeVolume(); sounds.button.play(); startMenu.style.display = "none"; loadLevelSequence(); }
+    function startGame() { 
+        punkMusic.pause(); // Stoppa punklåten när man väljer Let's Go
+        unlockAudio(); resize(); applySafeVolume(); sounds.button.play(); startMenu.style.display = "none"; loadLevelSequence(); 
+    }
 
     function loadLevelSequence() {
         gameActive = false; isEndingLevel = false;
@@ -131,14 +155,13 @@
             document.getElementById("level-intro").style.display = "none"; gameActive = true;
             document.getElementById("game-ui").style.display = (currentLevel < 6 ? "block" : "none");
             
-            // TOTAL MUSIK-BLOCKERING FÖR MOBIL
             if(!isMobile) {
                 gameMusic.src = currentLevel === 1 ? 'music.mp3' : `music${currentLevel}.mp3`; 
                 gameMusic.volume = parseFloat(volumeSlider.value);
                 gameMusic.play().catch(()=>{});
             } else {
                 gameMusic.pause();
-                gameMusic.src = ""; // Tar bort ljudfilen helt
+                gameMusic.src = ""; 
             }
         }, 1500);
     }
